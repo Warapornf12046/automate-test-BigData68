@@ -16,6 +16,8 @@ import { randomText } from "./fixtures/test-utils";
 
 type ObjectiveItem = {
   title: string;
+  searchText?: string;
+  optionText?: string;
   value: string;
   code: string;
   isOther: boolean;
@@ -82,12 +84,11 @@ async function selectAntdMultipleOptionBySearch(
 ) {
   const select = page.locator(selectSelector);
 
+  await expect(select).toBeVisible({ timeout: 10000 });
   await select.click();
 
-  const input = select.locator("input").first();
-
-  await expect(input).toBeVisible({ timeout: 10000 });
-  await input.fill(searchText);
+  await page.keyboard.press("Control+A");
+  await page.keyboard.type(searchText);
 
   const dropdown = page.locator(
     ".ant-select-dropdown:not(.ant-select-dropdown-hidden)",
@@ -138,7 +139,8 @@ async function fillObjectiveItem(page: Page, item: ObjectiveItem) {
   await selectAntdMultipleOptionBySearch(
     page,
     "#admin-report-objective",
-    item.title,
+    item.searchText ?? item.title,
+    item.optionText ?? item.title,
   );
 
   const detailSelector = `#admin-report-objective-detail-${item.value}`;
@@ -146,9 +148,20 @@ async function fillObjectiveItem(page: Page, item: ObjectiveItem) {
   await expect(page.locator(detailSelector)).toBeVisible({ timeout: 10000 });
 
   if (item.isOther) {
-    const otherSelector = `#admin-report-objective-other-${item.value}`;
+    const specificOtherSelector = `#admin-report-objective-other-${item.value}`;
+    const commonOtherSelector = "#admin-report-objective-other";
 
-    await fillAndExpect(page, otherSelector, item.otherValue ?? "");
+    const specificOtherInput = page.locator(specificOtherSelector);
+    const commonOtherInput = page.locator(commonOtherSelector);
+
+    if (await specificOtherInput.isVisible().catch(() => false)) {
+      await specificOtherInput.fill(item.otherValue ?? "");
+      await expect(specificOtherInput).toHaveValue(item.otherValue ?? "");
+    } else {
+      await expect(commonOtherInput).toBeVisible({ timeout: 10000 });
+      await commonOtherInput.fill(item.otherValue ?? "");
+      await expect(commonOtherInput).toHaveValue(item.otherValue ?? "");
+    }
   }
 
   const detailValue =
@@ -156,7 +169,30 @@ async function fillObjectiveItem(page: Page, item: ObjectiveItem) {
       ? `${item.detail} (${item.otherValue})`
       : item.detail;
 
-  await fillAndExpect(page, detailSelector, detailValue);
+  await page.locator(detailSelector).fill(detailValue);
+  await expect(page.locator(detailSelector)).toHaveValue(detailValue);
+}
+
+async function saveReport(page: Page) {
+  // กดปุ่มบันทึกหลักของหน้า
+  await expect(page.locator("#admin-report-save")).toBeVisible({
+    timeout: 10000,
+  });
+
+  await page.locator("#admin-report-save").click();
+
+  // ตรวจว่า SweetAlert ยืนยันขึ้น
+  await expect(page.getByText("ยืนยันการบันทึกข้อมูล")).toBeVisible({
+    timeout: 10000,
+  });
+
+  // กดปุ่มบันทึกใน SweetAlert
+  await page.getByRole("button", { name: "บันทึก" }).click();
+
+  // ตรวจข้อความสำเร็จ
+  await expect(page.getByText("บันทึกข้อมูลเสร็จสิ้น")).toBeVisible({
+    timeout: 10000,
+  });
 }
 
 async function fillDictionaryRow(
@@ -375,11 +411,9 @@ async function mReportPart2(page: Page) {
 async function mReportPart3(page: Page) {
   await page.locator("#admin-report-step-2-next").click();
 
-  await expect(page.getByText("3. Data Dictionary", { exact: true })).toBeVisible(
-    {
-      timeout: 10000,
-    },
-  );
+  await expect(page.getByText("3. Data Dictionary", { exact: true })).toBeVisible({
+    timeout: 10000,
+  });
 
   for (let i = 0; i < dictionaryRows.length; i++) {
     if (i > 0) {
@@ -393,17 +427,7 @@ async function mReportPart3(page: Page) {
     await fillDictionaryRow(page, i, dictionaryRows[i]);
   }
 
-  await page.locator("#admin-report-save").click();
-
-  await expect(page.getByText("ยืนยันการบันทึกข้อมูล")).toBeVisible({
-    timeout: 10000,
-  });
-
-  await page.getByRole("button", { name: "บันทึก" }).click();
-
-  await expect(page.getByText("บันทึกข้อมูลเสร็จสิ้น")).toBeVisible({
-    timeout: 10000,
-  });
+  await saveReport(page);
 }
 
 test.describe("Manage Report Page", () => {

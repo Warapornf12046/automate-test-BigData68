@@ -26,15 +26,19 @@ export const metadataBasicData = {
 
 export const objectiveData = [
   {
-    title: "วัตถุประสงค์24",
-    value: "375",
+    title: "อื่น ๆ",
+    searchText: "อื่นๆ",
+    optionText: "อื่น ๆ",
+    value: "41",
     code: "99",
     isOther: true,
-    otherValue: "วัตถุประสงค์24 ทดสอบ",
-    detail: "คำอธิบายวัตถุประสงค์ 1: วัตถุประสงค์24",
+    otherValue: "วัตถุประสงค์อื่น ๆ ทดสอบ",
+    detail: "คำอธิบายวัตถุประสงค์ 1: อื่น ๆ",
   },
   {
     title: "ดัชนี/ตัวชี้วัดระดับ นานาชาติ",
+    searchText: "ดัชนี",
+    optionText: "ดัชนี/ตัวชี้วัดระดับ นานาชาติ",
     value: "39",
     code: "12",
     isOther: false,
@@ -42,30 +46,28 @@ export const objectiveData = [
   },
   {
     title: "ไม่ทราบ",
+    searchText: "ไม่ทราบ",
+    optionText: "ไม่ทราบ",
     value: "40",
     code: "98",
     isOther: false,
     detail: "คำอธิบายวัตถุประสงค์ 3: ไม่ทราบ",
-  },
-  {
-    title: "วัตถุประสงค์23",
-    value: "362",
-    code: "99",
-    isOther: true,
-    otherValue: "วัตถุประสงค์23 ทดสอบ",
-    detail: "คำอธิบายวัตถุประสงค์ 4: วัตถุประสงค์23",
   },
 ];
 
 export const generalMetadataData = {
   freqUnitTitle: "ปี",
   freqValue: "1",
+
   geoScopeTitle: "อื่น ๆ",
   geoScopeOther: "ขอบเขตเชิงภูมิศาสตร์หรือเชิงพื้นที่ทดสอบ",
+
   source: "แหล่งข้อมูลทดสอบ Playwright",
   governanceTitle: "ข้อมูลสาธารณะ",
-  licenseTitle: "อื่น ๆ",
-  licenseOther: "สัญญาอนุญาตให้ใช้ข้อมูลอื่น ๆ",
+
+  licenseTitle: "Others License",
+  licenseValue: "95",
+  licenseOther: "รายละเอียดสัญญาอนุญาตให้ใช้ข้อมูล Others License",
 };
 
 export const formatData = [
