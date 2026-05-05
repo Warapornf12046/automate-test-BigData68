@@ -2,7 +2,7 @@
 // สร้าง helper สำหรับ random text
 // tests/fixtures/test-utils.ts
 
-export function randomText(prefix = "ทดสอบ") {
-  const rand = Math.random().toString(36).substring(2, 8);
-  return `${prefix}-${rand}`;
+export function randomText(prefix: string, maxLength = 50) {
+  const suffix = "1234567890".repeat(20);
+  return `${prefix}${suffix}`.slice(0, maxLength);
 }

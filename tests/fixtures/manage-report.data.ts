@@ -10,7 +10,7 @@ export const reportStep1Data = {
   mainTitle: "ฝึกอบรมฝีมือแรงงาน",
   subTitle: "ชุดข้อมูลร่วม",
   statusTitle: "เปิดใช้งาน",
-  publishDateTitle: "2569-04-30",
+  publishDateTitle: "2569-04-28",
   reportNamePrefix: "รายงานทดสอบ",
 };
 
@@ -69,12 +69,13 @@ export type SelectTestData = {
 export type MultiSelectWithDetailData = SelectTestData & {
   detail?: string;
   detailSelector?: string;
+  extraOtherInputSelector?: string;
 };
 
 export type DateFieldTestData = {
   selector: string;
   value: string;
-  format: "YYYY-MM-DD" | "YYYY-MM-DD-HH-mm";
+  format: "BBBB-MM-DD" | "BBBB-MM-DD-HH-mm";
 };
 
 export type DictInputField = {
@@ -148,20 +149,23 @@ export const metadataTypeData = {
 } as const;
 
 export const commonMetadataInputData = {
+  // title: Text 150 Characters
   datasetName: {
     selector: "#admin-report-dataset-name",
-    valuePrefix: "ชื่อชุดข้อมูล",
+    valuePrefix: "จำนวนกำลังแรงงานรวม",
     maxLength: 150,
     inputType: "string",
   },
 
+  // maintainer: Text 150 Characters
   contactName: {
     selector: "#admin-report-contact-name",
-    valuePrefix: "ชื่อผู้ติดต่อ",
+    valuePrefix: "กองสถิติสังคม",
     maxLength: 150,
     inputType: "string",
   },
 
+  // maintainer_email: Text 50 Characters
   contactEmail: {
     selector: "#admin-report-contact-email",
     value: "slaborfs@nso.go.th",
@@ -169,20 +173,24 @@ export const commonMetadataInputData = {
     inputType: "email",
   },
 
+  // tag_string: Text 200 Characters, comma separated
   keyword: {
     selector: "#admin-report-keyword",
-    value: "คําสําคัญ,คําสําคัญ",
-    maxLength: 255,
+    value: "แรงงาน,กำลังแรงงาน",
+    maxLength: 200,
     inputType: "string",
   },
 
+  // notes: Text 1,000 Characters
   description: {
     selector: "#admin-report-desc",
-    value: "รายละเอียดทดสอบ Playwright",
+    value:
+      "กำลังแรงงานรวม หมายถึง บุคคลทุกคนที่มีอายุ 15 ปีขึ้นไปในสัปดาห์แห่งการสำรวจ",
     maxLength: 1000,
     inputType: "string",
   },
 
+  // update_frequency_interval: Number หรือเว้นว่าง
   updateFrequencyValue: {
     selector: "#admin-report-freq-value",
     value: "1",
@@ -190,30 +198,48 @@ export const commonMetadataInputData = {
     inputType: "number",
   },
 
+  // data_source: Text 200 Characters
   source: {
     selector: "#admin-report-source",
-    value: "แหล่งข้อมูลทดสอบ Playwright",
-    maxLength: 255,
+    value: "สำรวจภาวะการทำงานของประชากร (สำนักงานสถิติแห่งชาติ)",
+    maxLength: 200,
     inputType: "string",
   },
 
-  accessCondition: {
-    selector: "#admin-report-access-condition",
-    value: "เงื่อนไขในการเข้าถึงข้อมูลทดสอบ Playwright",
-    maxLength: 1000,
-    inputType: "string",
-  },
+  // accessible_condition: กรณีข้อมูลสาธารณะ กำหนดเป็น "ไม่มี"
+  // accessCondition: {
+  //   selector: "#admin-report-access-condition",
+  //   value: "ไม่มี",
+  //   maxLength: 1000,
+  //   inputType: "string",
+  // },
 
-  // เพิ่มตัวนี้
+  // url: URL ที่เข้าถึงชุดข้อมูลได้
   url: {
     selector: "#admin-report-url",
-    value: "https://playwright.dev/",
-    maxLength: 500,
+    value: "https://www.nso.go.th/",
+    // maxLength: 100,
     inputType: "url",
   },
 
-  highValueDataset: true,
+  highValueDataset: false,
   referenceData: false,
+} as const;
+
+export const accessConditionData = {
+  public: {
+    selector: "#admin-report-access-condition",
+    value: "ไม่มี",
+    // maxLength: 1000,
+    inputType: "string",
+  },
+
+  nonPublic: {
+    selector: "#admin-report-access-condition",
+    value: "มี เฉพาะเจ้าหน้าที่ที่ได้รับอนุญาตเท่านั้น",
+    // maxLength: 1000,
+    inputType: "string",
+  },
 } as const;
 
 export const sponsorData = [
@@ -224,8 +250,11 @@ export const sponsorData = [
     value: "130",
     code: "9",
     isOther: true,
-    otherInputSelector: "#admin-report-sponsor-other-130",
+
+    // ใช้ input กลาง
+    otherInputSelector: "#admin-report-sponsor-other",
     otherValue: "ผู้สนับสนุนหรือผู้ร่วมดำเนินการอื่น ๆ ทดสอบ",
+
     detailSelector: "#admin-report-sponsor-detail-130",
     detail: "คำอธิบายผู้สนับสนุนหรือผู้ร่วมดำเนินการอื่น ๆ",
   },
@@ -236,6 +265,7 @@ export const sponsorData = [
     value: "129",
     code: "5",
     isOther: false,
+
     detailSelector: "#admin-report-sponsor-detail-129",
     detail: "คำอธิบายผู้สนับสนุนสถาบันการศึกษา",
   },
@@ -287,12 +317,18 @@ export const organizationData = {
 export const objectiveData = [
   {
     title: "อื่น ๆ",
-    searchText: "อื่น",
+    searchText: "อื่น ๆ",
     optionText: "อื่น ๆ",
     value: "41",
     code: "99",
     isOther: true,
+
+    otherInputSelector: "#admin-report-objective-other",
     otherValue: "วัตถุประสงค์อื่น ๆ ทดสอบ",
+
+    extraOtherInputSelector: "#admin-report-objective-other-41",
+
+    detailSelector: "#admin-report-objective-detail-41",
     detail: "คำอธิบายวัตถุประสงค์อื่น ๆ",
   },
   {
@@ -302,6 +338,8 @@ export const objectiveData = [
     value: "39",
     code: "12",
     isOther: false,
+
+    detailSelector: "#admin-report-objective-detail-39",
     detail: "คำอธิบายวัตถุประสงค์ดัชนี/ตัวชี้วัดระดับนานาชาติ",
   },
 ] as const;
@@ -353,13 +391,45 @@ export const dataFormatData = [
 ] as const;
 
 export const dataGovernanceData = {
-  selector: "#admin-report-governance",
-  title: "ข้อมูลสาธารณะ",
-  searchText: "ข้อมูลสาธารณะ",
-  optionText: "ข้อมูลสาธารณะ",
-  value: "85",
-  code: "1",
-  isOther: false,
+  public: {
+    selector: "#admin-report-governance",
+    title: "ข้อมูลสาธารณะ",
+    searchText: "ข้อมูลสาธารณะ",
+    optionText: "ข้อมูลสาธารณะ",
+    value: "85",
+    code: "1",
+    isOther: false,
+  },
+
+  personal: {
+    selector: "#admin-report-governance",
+    title: "ข้อมูลส่วนบุคคล",
+    searchText: "ข้อมูลส่วนบุคคล",
+    optionText: "ข้อมูลส่วนบุคคล",
+    value: "86",
+    code: "2",
+    isOther: false,
+  },
+
+  security: {
+    selector: "#admin-report-governance",
+    title: "ข้อมูลความมั่นคง",
+    searchText: "ข้อมูลความมั่นคง",
+    optionText: "ข้อมูลความมั่นคง",
+    value: "87",
+    code: "3",
+    isOther: false,
+  },
+
+  secret: {
+    selector: "#admin-report-governance",
+    title: "ข้อมูลความลับทางราชการ",
+    searchText: "ข้อมูลความลับทางราชการ",
+    optionText: "ข้อมูลความลับทางราชการ",
+    value: "88",
+    code: "4",
+    isOther: false,
+  },
 } as const;
 
 export const licenseData = {
@@ -377,49 +447,85 @@ export const licenseData = {
 // -----------------------------
 // สถิติ
 export const statisticMetadataData = {
-  // ปีข้อมูลที่เริ่มต้นจัดทํา
-  startDataYear: {
-    selector: "#admin-report-start-data-year",
-    value: "2026-04-01",
-    format: "YYYY-MM-DD",
-  },
-
-  // ปีข้อมูลล่าสุดที่เผยแพร่
-  latestPublishedYear: {
-    selector: "#admin-report-latest-published-year",
-    value: "2026-04-28",
-    format: "YYYY-MM-DD",
-  },
-
-  // วันที่กําหนดเผยแพร่ข้อมูล
-  publishedDate: {
-    selector: "#admin-report-published-date",
-    value: "2026-04-28 09:30",
-    format: "YYYY-MM-DD-HH-mm",
-  },
-
-  // การจัดจำแนก
- classificationData: [
-  {
-    title: "อื่น ๆ ระบุ .........",
-    searchText: "อื่น",
-    optionText: "อื่น ๆ ระบุ",
-    value: "313",
-    code: "99",
-    isOther: true,
-    otherInputSelector: "#admin-report-classification-other",
-    otherValue: "การจัดจำแนกอื่น ๆ ทดสอบ",
-  },
-  {
-    title: "เพศ",
-    searchText: "เพศ",
-    optionText: "เพศ",
-    value: "301",
-    code: "01",
+  startDataYearType: {
+    selector: "#admin-report-start-data-year-type",
+    title: "ระบุปี เดือน และวัน",
+    searchText: "ระบุปี เดือน และวัน",
+    optionText: "ระบุปี เดือน และวัน",
+    value: "DATE",
+    code: "DATE",
     isOther: false,
   },
-],
-  // หน่วยวัด
+
+  startDataYear: {
+    selector: "#admin-report-start-data-year",
+    value: "2569-04-01",
+    pickerValue: "2026-04-01",
+    format: "BBBB-MM-DD",
+  },
+
+  latestPublishedYearType: {
+    selector: "#admin-report-latest-published-year-type",
+    title: "ระบุปี เดือน และวัน",
+    searchText: "ระบุปี เดือน และวัน",
+    optionText: "ระบุปี เดือน และวัน",
+    value: "DATE",
+    code: "DATE",
+    isOther: false,
+  },
+
+  latestPublishedYear: {
+    selector: "#admin-report-latest-published-year",
+    value: "2569-04-28",
+    pickerValue: "2026-04-28",
+    format: "BBBB-MM-DD",
+  },
+
+  publishedDateType: {
+    selector: "#admin-report-published-date-type",
+    title: "ระบุวันเวลาแบบชัดเจน",
+    searchText: "ระบุวันเวลาแบบชัดเจน",
+    optionText: "ระบุวันเวลาแบบชัดเจน",
+    value: "DATETIME",
+    code: "DATETIME",
+    isOther: false,
+  },
+
+  publishedDate: {
+    selector: "#admin-report-published-date",
+    value: "2569-04-28-09-30",
+    pickerValue: "2026-04-28",
+    format: "BBBB-MM-DD-HH-mm",
+  },
+
+  publishedDateText: {
+    selector: "#admin-report-published-date-text",
+    value: "ทุกวันที่ 3 ของเดือน เวลา 09.00 น.",
+    maxLength: 1000,
+    inputType: "string",
+  },
+
+  classificationData: [
+    {
+      title: "อื่น ๆ ระบุ .........",
+      searchText: "อื่น ๆ ระบุ",
+      optionText: "อื่น ๆ ระบุ",
+      value: "313",
+      code: "99",
+      isOther: true,
+      otherInputSelector: "#admin-report-classification-other",
+      otherValue: "การจัดจำแนกอื่น ๆ ทดสอบ",
+    },
+    {
+      title: "เพศ",
+      searchText: "เพศ",
+      optionText: "เพศ",
+      value: "301",
+      code: "01",
+      isOther: false,
+    },
+  ],
+
   measureUnit: {
     selector: "#admin-report-measure-unit",
     value: "คน",
@@ -427,11 +533,10 @@ export const statisticMetadataData = {
     inputType: "string",
   },
 
-  // หน่วยตัวคูณ
   multiplierUnit: {
     selector: "#admin-report-multiplier-unit",
     title: "อื่น ๆ ระบุ .........",
-    searchText: "อื่น",
+    searchText: "อื่น ๆ ระบุ",
     optionText: "อื่น ๆ ระบุ",
     value: "328",
     code: "99",
@@ -440,35 +545,33 @@ export const statisticMetadataData = {
     otherValue: "หน่วยตัวคูณอื่น ๆ ทดสอบ",
   },
 
-  // วิธีการคำนวณ
   calculationMethod: {
     selector: "#admin-report-calculation-method",
     value: "วิธีการคำนวณทดสอบ",
-    maxLength: 1000,
+    maxLength: 500,
     inputType: "string",
   },
 
-  // มาตรฐานการจัดทำข้อมูล
   dataStandard: {
     selector: "#admin-report-data-standard",
     value: "มาตรฐานการจัดทำข้อมูลทดสอบ",
-    maxLength: 1000,
+    maxLength: 200,
     inputType: "string",
   },
 
-  // URL
   url: {
     selector: "#admin-report-url",
     value: "https://playwright.dev/statistic",
-    maxLength: 500,
+    // maxLength: 100,
     inputType: "url",
   },
 
-  // ภาษาที่ใช้
   languageData,
 
-  // สถิติทางการ
-  officialStatistic: true,
+  officialStatistic: {
+    id: "admin-report-official-statistic",
+    checked: true,
+  },
 } as const;
 
 
@@ -483,6 +586,74 @@ export const geoSpatialMetadataData = {
     value: "329",
     code: "01",
     isOther: false,
+  },
+
+  referenceTimeType: {
+    selector: "#admin-report-reference-time-type",
+    title: "ระบุวันเวลาแบบชัดเจน",
+    searchText: "ระบุวันเวลาแบบชัดเจน",
+    optionText: "ระบุวันเวลาแบบชัดเจน",
+    value: "DATETIME",
+    code: "DATETIME",
+    isOther: false,
+  },
+
+  referenceTime: {
+    selector: "#admin-report-reference-time",
+    value: "2569-04-28-09-30",
+    format: "BBBB-MM-DD-HH-mm",
+  },
+
+  // วันที่กำหนดเผยแพร่ข้อมูล ของ GIS แบบ DATETIME
+  scheduledPublishedDateTimeType: {
+    selector: "#admin-report-published-date-type-spatial",
+    title: "ระบุวันเวลาแบบชัดเจน",
+    searchText: "ระบุวันเวลาแบบชัดเจน",
+    optionText: "ระบุวันเวลาแบบชัดเจน",
+    value: "DATETIME",
+    code: "DATETIME",
+    isOther: false,
+  },
+
+  scheduledPublishedDateTime: {
+    selector: "#admin-report-published-date-spatial",
+    value: "2569-04-28-10-30",
+    format: "BBBB-MM-DD-HH-mm",
+  },
+
+  // วันที่กำหนดเผยแพร่ข้อมูล ของ GIS แบบ TEXT
+  scheduledPublishedDateTypeText: {
+    selector: "#admin-report-published-date-type-spatial",
+    title: "ระบุเป็นข้อความ",
+    searchText: "ระบุเป็นข้อความ",
+    optionText: "ระบุเป็นข้อความ",
+    value: "TEXT",
+    code: "TEXT",
+    isOther: false,
+  },
+
+  scheduledPublishedDateText: {
+    selector: "#admin-report-published-date-text-spatial",
+    value: "ทุกวันที่ 3 ของเดือน เวลา 09.00 น.",
+    maxLength: 1000,
+    inputType: "string",
+  },
+
+  // วันที่เผยแพร่ข้อมูล
+  dataPublishedDateType: {
+    selector: "#admin-report-data-published-date-type",
+    title: "ระบุวันเวลาแบบชัดเจน",
+    searchText: "ระบุวันเวลาแบบชัดเจน",
+    optionText: "ระบุวันเวลาแบบชัดเจน",
+    value: "DATETIME",
+    code: "DATETIME",
+    isOther: false,
+  },
+
+  publishedDate: {
+    selector: "#admin-report-data-published-date",
+    value: "2569-04-28-11-30",
+    format: "BBBB-MM-DD-HH-mm",
   },
 
   mapScaleData: [
@@ -534,42 +705,41 @@ export const geoSpatialMetadataData = {
     inputType: "number",
   },
 
-  positionalAccuracy: {
-  selector: "#admin-report-positional-accuracy",
-  value: "ความถูกต้องของตำแหน่งทดสอบ",
-  maxLength: 255,
-  inputType: "string",
-},
-
-  referenceTime: {
-    selector: "#admin-report-reference-time",
-    value: "2026-04-28 09:30",
-    format: "YYYY-MM-DD-HH-mm",
-  },
-
-  scheduledPublishedDateTime: {
-    selector: "#admin-report-data-published-date",
-    value: "2026-04-28 10:30",
-    format: "YYYY-MM-DD-HH-mm",
-  },
-
-  publishedDate: {
-    selector: "#admin-report-published-date",
-    value: "2026-04-28 09:30",
-    format: "YYYY-MM-DD-HH-mm",
-  },
-
   url: {
     selector: "#admin-report-url",
     value: "https://playwright.dev/geospatial",
-    maxLength: 500,
+    maxLength: 100,
     inputType: "url",
   },
 
   languageData,
 } as const;
 
- 
+export const positionalAccuracyData = {
+  has: {
+    selector: "#admin-report-positional-accuracy",
+    title: "มี",
+    searchText: "มี",
+    optionText: "มี",
+    value: "มี",
+    code: "Y",
+    isOther: true,
+    otherInputSelector: "#admin-report-positional-accuracy-detail",
+    otherValue: "มี ควบคุมความถูกต้องด้วย RMSEH ตามมาตรฐาน FGDS",
+  },
+
+  none: {
+    selector: "#admin-report-positional-accuracy",
+    title: "ไม่มี",
+    searchText: "ไม่มี",
+    optionText: "ไม่มี",
+    value: "ไม่มี",
+    code: "N",
+    isOther: false,
+  },
+} as const;
+
+
 
 // -----------------------------------------------------
 // ประเภทข้อมูล = 1 select
@@ -753,7 +923,7 @@ export const geoSpatialMetadataData = {
 //   otherValue: "หน่วยที่ย่อยที่สุดของการจัดเก็บข้อมูลทดสอบ99",
 // };
 
- 
+
 
 
 
@@ -840,6 +1010,101 @@ export const dictionaryRows: DictionaryRowTestData[] = [
     },
   },
 ];
+
+export const metadataValidationCases = [
+  {
+    key: "record",
+    name: "ข้อมูลระเบียน",
+    messages: [
+      "กรุณากรอกชื่อชุดข้อมูล",
+      "กรุณาเลือกองค์กร",
+      "กรุณากรอกชื่อผู้ติดต่อ",
+      "กรุณากรอกอีเมลผู้ติดต่อ",
+      "กรุณากรอกรายละเอียด",
+      "กรุณาเลือกวัตถุประสงค์",
+      "กรุณาเลือกหน่วยความถี่ของการปรับปรุงข้อมูล",
+      "กรุณาเลือกรูปแบบการเก็บข้อมูล",
+      "กรุณาเลือกหมวดหมู่ข้อมูลตามธรรมาภิบาลข้อมูลภาครัฐ",
+      "กรุณาเลือกสัญญาอนุญาตให้ใช้ข้อมูล",
+      "กรุณาเลือกภาษาที่ใช้",
+    ],
+  },
+  {
+    key: "statistic",
+    name: "ข้อมูลสถิติ",
+    messages: [
+      "กรุณากรอกชื่อชุดข้อมูล",
+      "กรุณาเลือกองค์กร",
+      "กรุณากรอกชื่อผู้ติดต่อ",
+      "กรุณากรอกอีเมลผู้ติดต่อ",
+      "กรุณากรอกรายละเอียด",
+      "กรุณาเลือกวัตถุประสงค์",
+      "กรุณาเลือกหน่วยความถี่ของการปรับปรุงข้อมูล",
+      "กรุณาเลือกรูปแบบการเก็บข้อมูล",
+      "กรุณาเลือกหมวดหมู่ข้อมูลตามธรรมาภิบาลข้อมูลภาครัฐ",
+      "กรุณาเลือกสัญญาอนุญาตให้ใช้ข้อมูล",
+      "กรุณากรอกเงื่อนไขในการเข้าถึงข้อมูล",
+      "กรุณาเลือกวันที่กําหนดเผยแพร่ข้อมูล",
+      "กรุณาเลือกหน่วยตัวคูณ",
+      "กรุณาเลือกภาษาที่ใช้",
+      "กรุณาเลือกสถิติทางการ",
+    ],
+  },
+  {
+    key: "geoSpatial",
+    name: "ข้อมูลภูมิสารสนเทศเชิงพื้นที่",
+    messages: [
+      "กรุณากรอกชื่อชุดข้อมูล",
+      "กรุณาเลือกองค์กร",
+      "กรุณากรอกชื่อผู้ติดต่อ",
+      "กรุณากรอกอีเมลผู้ติดต่อ",
+      "กรุณากรอกรายละเอียด",
+      "กรุณาเลือกวัตถุประสงค์",
+      "กรุณาเลือกหน่วยความถี่ของการปรับปรุงข้อมูล",
+      "กรุณาเลือกรูปแบบการเก็บข้อมูล",
+      "กรุณาเลือกหมวดหมู่ข้อมูลตามธรรมาภิบาลข้อมูลภาครัฐ",
+      "กรุณาเลือกสัญญาอนุญาตให้ใช้ข้อมูล",
+      "กรุณากรอกเงื่อนไขในการเข้าถึงข้อมูล",
+      "กรุณาเลือกชุดข้อมูลภูมิศาสตร์",
+      "กรุณาเลือกมาตราส่วนของชุดข้อมูล",
+      "กรุณาเลือกวันที่กําหนดเผยแพร่ข้อมูล",
+      "กรุณาเลือกภาษาที่ใช้",
+    ],
+  },
+  {
+    key: "multiple",
+    name: "ข้อมูลหลากหลายประเภท",
+    messages: [
+      "กรุณากรอกชื่อชุดข้อมูล",
+      "กรุณาเลือกองค์กร",
+      "กรุณากรอกชื่อผู้ติดต่อ",
+      "กรุณากรอกอีเมลผู้ติดต่อ",
+      "กรุณากรอกรายละเอียด",
+      "กรุณาเลือกวัตถุประสงค์",
+      "กรุณาเลือกหน่วยความถี่ของการปรับปรุงข้อมูล",
+      "กรุณาเลือกรูปแบบการเก็บข้อมูล",
+      "กรุณาเลือกหมวดหมู่ข้อมูลตามธรรมาภิบาลข้อมูลภาครัฐ",
+      "กรุณาเลือกสัญญาอนุญาตให้ใช้ข้อมูล",
+    ],
+  },
+  {
+    key: "other",
+    name: "ข้อมูลประเภทอื่น ๆ ระบุ",
+    messages: [
+      "กรุณากรอกชื่อประเภทข้อมูล",
+      "กรุณากรอกชื่อชุดข้อมูล",
+      "กรุณาเลือกองค์กร",
+      "กรุณากรอกชื่อผู้ติดต่อ",
+      "กรุณากรอกอีเมลผู้ติดต่อ",
+      "กรุณากรอกรายละเอียด",
+      "กรุณาเลือกวัตถุประสงค์",
+      "กรุณาเลือกหน่วยความถี่ของการปรับปรุงข้อมูล",
+      "กรุณาเลือกรูปแบบการเก็บข้อมูล",
+      "กรุณาเลือกหมวดหมู่ข้อมูลตามธรรมาภิบาลข้อมูลภาครัฐ",
+      "กรุณาเลือกสัญญาอนุญาตให้ใช้ข้อมูล",
+    ],
+  },
+] as const;
 //จำนวน text
 export const inputLengthTestData = {
   datasetName: {
