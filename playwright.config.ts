@@ -33,10 +33,9 @@ export default defineConfig({
   /* Shared settings for all the projects below. See https://playwright.dev/docs/api/class-testoptions. */
   use: {
     baseURL: "http://localhost:3000",
-    launchOptions: {
-      slowMo: 300, 
-      // หน่วงทุก action 2 วินาที
-    },
+    // launchOptions: {
+    //   slowMo: 300, 
+    // },
 
     /* Collect trace when retrying the failed test. See https://playwright.dev/docs/trace-viewer */
     trace: "on-first-retry",
