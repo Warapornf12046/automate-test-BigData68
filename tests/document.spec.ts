@@ -49,7 +49,16 @@ async function adddata(page: Page) {
     "บันทึกข้อมูลเสร็จสิ้น",
   );
   //chack data is have value
-  await page.locator('[id^="edit-"]').first().click();
+  const targetRow = page
+    .locator(".ant-table-tbody tr.ant-table-row", {
+      has: page.locator("td", { hasText: docName }),
+    })
+    .first();
+
+  await expect(targetRow).toBeVisible({ timeout: 10000 });
+
+  await targetRow.locator('button[id^="edit-"]').click();
+
   await expect(page.locator("#docName")).toHaveValue(docName);
 
   await expect(page.locator("#catalogCode").locator("..")).toContainText(
@@ -83,6 +92,7 @@ async function updatedata(page: Page) {
   await expect(page).toHaveURL(/.*manage\/document/);
 
   //updata data
+
   await page.locator('[id^="edit-"]').first().click();
 
   const docName = randomText(20);
@@ -111,7 +121,16 @@ async function updatedata(page: Page) {
   );
 
   //check data is update?
-  await page.locator('[id^="edit-"]').first().click();
+  const targetRow = page
+    .locator(".ant-table-tbody tr.ant-table-row", {
+      has: page.locator("td", { hasText: docName }),
+    })
+    .first();
+
+  await expect(targetRow).toBeVisible({ timeout: 10000 });
+
+  await targetRow.locator('button[id^="edit-"]').click();
+
   await expect(page.locator("#docName")).toHaveValue(docName);
 
   await expect(page.locator("#catalogCode").locator("..")).toContainText(
@@ -145,40 +164,32 @@ async function deletedata(page: Page) {
   await expect(page).toHaveURL(/.*manage\/document/);
 
   // เลือกแถวข้อมูลจริงแถวแรก ไม่เอา ant-table-measure-row
-  const firstRow = page
-    .locator(".ant-table-tbody tr:not(.ant-table-measure-row)")
-    .first();
+  const rows = page.locator(".ant-table-tbody tr:not(.ant-table-measure-row)");
 
+  const firstRow = rows.first();
   await expect(firstRow).toBeVisible({ timeout: 10000 });
 
-  // เก็บชื่อเอกสารจาก column ชื่อเอกสาร
-  // nth(0) = ลำดับ, nth(1) = ชื่อเอกสาร
+  // เก็บชื่อที่จะลบไว้เป็น string
   const deletedDocName = (
     await firstRow.locator("td").nth(1).innerText()
   ).trim();
 
-  console.log("deletedDocName:", deletedDocName);
-
-  // กดปุ่มลบของแถวแรก ไม่ใช้ page.locator(...).first()
-  // เพื่อให้มั่นใจว่าลบแถวเดียวกับชื่อที่เก็บไว้
+  // กดลบจากแถวเดียวกัน
   await firstRow.locator('[id^="delete-"]').click();
 
-  // กดยืนยันลบ
+  // popup confirm ลบ
+  await expect(page.locator(".swal2-popup")).toBeVisible({ timeout: 10000 });
   await page.locator(".swal2-confirm").click();
 
-  // รอ popup ลบสำเร็จ
-  const swal = page.locator(".swal2-popup");
-  await expect(swal).toBeVisible({ timeout: 10000 });
+  // popup success
+  await expect(page.locator(".swal2-popup")).toBeVisible({ timeout: 10000 });
   await expect(page.locator(".swal2-title")).toContainText("ลบข้อมูลเสร็จสิ้น");
 
-  // กด OK popup สำเร็จ ถ้าระบบมีปุ่ม confirm อีกครั้ง
-  await page.locator(".swal2-confirm").click();
+ 
 
-  // เช็คว่าชื่อที่ลบหายไปจากตารางแล้ว
+  // เช็คว่าชื่อที่ลบหายไปจาก table แล้ว
   await expect(page.locator(".ant-table-tbody")).not.toContainText(
     deletedDocName,
-    {
-      timeout: 10000,
-    },
+    { timeout: 10000 },
   );
 }

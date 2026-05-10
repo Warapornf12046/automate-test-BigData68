@@ -1,7 +1,7 @@
 import * as fs from "fs";
 import * as path from "path";
 export function createRandomUploadFile(ext: "pdf" | "xlsx" | "txt" = "pdf") {
-  const dir = path.join(process.cwd(), "tests", "fixtures");
+  const dir = path.join(process.cwd(), "tests", "filetest");
 
   if (!fs.existsSync(dir)) {
     fs.mkdirSync(dir, { recursive: true });

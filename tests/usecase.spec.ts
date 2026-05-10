@@ -20,22 +20,27 @@ async function adddata(page: Page) {
   await expect(page).toHaveURL(/.*manage\/usecase/);
 
   //addข้อมูล
-  await page.locator("#usecaseName").fill(randomText(20));
-  await page.locator("#orgCode").click();
-  await page.getByTitle("กรมพัฒนาฝีมือแรงงาน").click();
+  const usecasName = randomText(20);
+  await page.locator("#usecaseName").fill(usecasName);
 
-  await page.locator("#detail").fill(randomText(60));
+  await selectAntdOption(page, "#orgCode", "กรมพัฒนาฝีมือแรงงาน");
 
-  await page.locator("#reportDataGroupCode").click();
-  await page.getByTitle("โครงสร้างแรงงานและการจ้างงาน").click();
+  const detail = randomText(60);
 
-  await page.locator("#entryType").click();
-  await page.getByTitle("อุปทานแรงงาน").click();
+  await page.locator("#detail").fill(detail);
 
-  await page.locator("#status").click();
-  await page.getByTitle("เผยแพร่").click();
+  await selectAntdOption(
+    page,
+    "#reportDataGroupCode",
+    "โครงสร้างแรงงานและการจ้างงาน",
+  );
 
-  await page.locator("#analysisName").fill(randomText(20));
+  await selectAntdOption(page, "#entryType", "อุปทานแรงงาน");
+
+  await selectAntdOption(page, "#status", "เผยแพร่");
+
+  const analysisName = randomText(60);
+  await page.locator("#analysisName").fill(analysisName);
 
   await page.keyboard.press("Enter");
   const swal = page.locator(".swal2-popup");
@@ -43,6 +48,34 @@ async function adddata(page: Page) {
   await expect(page.locator(".swal2-title")).toContainText(
     "บันทึกข้อมูลเสร็จสิ้น",
   );
+
+  //check data is update?
+  const targetRow = page
+    .locator(".ant-table-tbody tr.ant-table-row", {
+      has: page.locator("td", { hasText: usecasName }),
+    })
+    .first();
+  await targetRow.locator('button[id^="edit-"]').click();
+
+  await expect(page.locator("#usecaseName")).toHaveValue(usecasName);
+
+  await expect(page.locator("#orgCode").locator("..")).toContainText(
+    "กรมพัฒนาฝีมือแรงงาน",
+  );
+
+  await expect(page.locator("#detail")).toHaveValue(detail);
+
+  await expect(
+    page.locator("#reportDataGroupCode").locator(".."),
+  ).toContainText("โครงสร้างแรงงานและการจ้างงาน");
+
+  await expect(page.locator("#entryType").locator("..")).toContainText(
+    "อุปทานแรงงาน",
+  );
+
+  await expect(page.locator("#status").locator("..")).toContainText("เผยแพร่");
+
+  await expect(page.locator("#analysisName")).toHaveValue(analysisName);
 }
 
 //updatedata
@@ -54,13 +87,29 @@ async function updatedata(page: Page) {
   await page.locator("a#จัดการวิเคราะห์ข้อมูลตามกรณีศึกษา-4").click();
   await expect(page).toHaveURL(/.*manage\/usecase/);
 
-  await page.locator('[id^="edit-"]').last().click();
+  await page.locator('[id^="edit-"]').first().click();
 
-  await page.locator("#usecaseName").fill(randomText(20));
+  const usecasName = randomText(20);
+  await page.locator("#usecaseName").fill(usecasName);
 
   await selectAntdOption(page, "#orgCode", "กรมการจัดหางาน");
 
-  await page.locator("#detail").fill(randomText(60));
+  const detail = randomText(60);
+
+  await page.locator("#detail").fill(detail);
+
+  await selectAntdOption(
+    page,
+    "#reportDataGroupCode",
+    "ผู้ประกันตนและประกันสังคม",
+  );
+
+  await selectAntdOption(page, "#entryType", "อุปสงค์แรงงาน");
+
+  await selectAntdOption(page, "#status", "ฉบับร่าง");
+
+  const analysisName = randomText(60);
+  await page.locator("#analysisName").fill(analysisName);
 
   await page.locator("#submit").click();
   const swal = page.locator(".swal2-popup");
@@ -68,6 +117,34 @@ async function updatedata(page: Page) {
   await expect(page.locator(".swal2-title")).toContainText(
     "แก้ไขข้อมูลเสร็จสิ้น",
   );
+
+  //check data is update?
+  const targetRow = page
+    .locator(".ant-table-tbody tr.ant-table-row", {
+      has: page.locator("td", { hasText: usecasName }),
+    })
+    .first();
+  await targetRow.locator('button[id^="edit-"]').click();
+
+  await expect(page.locator("#usecaseName")).toHaveValue(usecasName);
+
+  await expect(page.locator("#orgCode").locator("..")).toContainText(
+    "กรมการจัดหางาน",
+  );
+
+  await expect(page.locator("#detail")).toHaveValue(detail);
+
+  await expect(
+    page.locator("#reportDataGroupCode").locator(".."),
+  ).toContainText("ผู้ประกันตนและประกันสังคม");
+
+  await expect(page.locator("#entryType").locator("..")).toContainText(
+    "อุปสงค์แรงงาน",
+  );
+
+  await expect(page.locator("#status").locator("..")).toContainText("ฉบับร่าง");
+
+  await expect(page.locator("#analysisName")).toHaveValue(analysisName);
 }
 
 //deletedata
@@ -79,10 +156,32 @@ async function deletedata(page: Page) {
   await page.locator("a#จัดการวิเคราะห์ข้อมูลตามกรณีศึกษา-4").click();
   await expect(page).toHaveURL(/.*manage\/usecase/);
 
-  await page.locator('[id^="delete-"]').last().click();
+  const rows = page.locator(".ant-table-tbody tr:not(.ant-table-measure-row)");
+
+  const firstRow = rows.first();
+  await expect(firstRow).toBeVisible({ timeout: 10000 });
+
+  // เก็บชื่อที่จะลบไว้เป็น string
+  const deletedDocName = (
+    await firstRow.locator("td").nth(1).innerText()
+  ).trim();
+
+  // กดลบจากแถวเดียวกัน
+  await firstRow.locator('[id^="delete-"]').click();
+
+  // popup confirm ลบ
+  await expect(page.locator(".swal2-popup")).toBeVisible({ timeout: 10000 });
   await page.locator(".swal2-confirm").click();
 
-  const swal = page.locator(".swal2-popup");
-  await expect(swal).toBeVisible({ timeout: 10000 });
+  // popup success
+  await expect(page.locator(".swal2-popup")).toBeVisible({ timeout: 10000 });
   await expect(page.locator(".swal2-title")).toContainText("ลบข้อมูลเสร็จสิ้น");
+
+  // เช็คว่าชื่อที่ลบหายไปจาก table แล้ว
+  await expect(page.locator(".ant-table-tbody")).not.toContainText(
+    deletedDocName,
+    { timeout: 10000 },
+  );
+
+
 }
