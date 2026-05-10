@@ -63,13 +63,16 @@ export type SelectTestData = {
   code: string;
   isOther?: boolean;
   otherInputSelector?: string;
+  otherInputTestId?: string;
   otherValue?: string;
 };
 
 export type MultiSelectWithDetailData = SelectTestData & {
   detail?: string;
   detailSelector?: string;
+  detailTestId?: string;
   extraOtherInputSelector?: string;
+  extraOtherInputTestId?: string;
 };
 
 export type DateFieldTestData = {
@@ -176,7 +179,7 @@ export const commonMetadataInputData = {
   // tag_string: Text 200 Characters, comma separated
   keyword: {
     selector: "#admin-report-keyword",
-    value: "แรงงาน,กำลังแรงงาน",
+    value: "แรงงาน,กำลังแรงงาน,#กำลังแรงงานรวม",
     maxLength: 200,
     inputType: "string",
   },
@@ -206,24 +209,7 @@ export const commonMetadataInputData = {
     inputType: "string",
   },
 
-  // accessible_condition: กรณีข้อมูลสาธารณะ กำหนดเป็น "ไม่มี"
-  // accessCondition: {
-  //   selector: "#admin-report-access-condition",
-  //   value: "ไม่มี",
-  //   maxLength: 1000,
-  //   inputType: "string",
-  // },
-
-  // url: URL ที่เข้าถึงชุดข้อมูลได้
-  url: {
-    selector: "#admin-report-url",
-    value: "https://www.nso.go.th/",
-    // maxLength: 100,
-    inputType: "url",
-  },
-
-  highValueDataset: false,
-  referenceData: false,
+   
 } as const;
 
 export const accessConditionData = {
@@ -252,11 +238,9 @@ export const sponsorData = [
     isOther: true,
 
     // ใช้ input กลาง
-    otherInputSelector: "#admin-report-sponsor-other",
+    otherInputSelector: "#admin-report-sponsor-other-new",
     otherValue: "ผู้สนับสนุนหรือผู้ร่วมดำเนินการอื่น ๆ ทดสอบ",
 
-    detailSelector: "#admin-report-sponsor-detail-130",
-    detail: "คำอธิบายผู้สนับสนุนหรือผู้ร่วมดำเนินการอื่น ๆ",
   },
   {
     title: "สถาบันการศึกษา",
@@ -265,10 +249,15 @@ export const sponsorData = [
     value: "129",
     code: "5",
     isOther: false,
-
-    detailSelector: "#admin-report-sponsor-detail-129",
-    detail: "คำอธิบายผู้สนับสนุนสถาบันการศึกษา",
   },
+  {
+    title: "ผู้สนับสนุนหรือผู้ร่วมดำเนินการ19",
+    searchText: "ผู้สนับสนุนหรือผู้ร่วมดำเนินการ19",
+    optionText: "ผู้สนับสนุนหรือผู้ร่วมดำเนินการ19",
+    value: "279",
+    code: "9",
+    isOther: false,
+  }
 ] as const;
 
 export const smallestUnitData = {
@@ -299,9 +288,17 @@ export const languageData = [
     value: "157",
     code: "99",
     isOther: true,
-    otherInputSelector: "#admin-report-language-other",
+    otherInputSelector: "#admin-report-language-other-new",
     otherValue: "ภาษาที่ใช้อื่น ๆ ทดสอบ",
   },
+  {
+    title: "ภาษาที่ใช้18",
+    searchText: "ภาษาที่ใช้18",
+    optionText: "ภาษาที่ใช้18",
+    value: "273",
+    code: "99",
+    isOther: false,
+  }
 ] as const;
 
 export const organizationData = {
@@ -315,7 +312,7 @@ export const organizationData = {
 } as const;
 
 export const objectiveData = [
-  {
+   {
     title: "อื่น ๆ",
     searchText: "อื่น ๆ",
     optionText: "อื่น ๆ",
@@ -323,13 +320,9 @@ export const objectiveData = [
     code: "99",
     isOther: true,
 
-    otherInputSelector: "#admin-report-objective-other",
+    otherInputSelector: "#admin-report-objective-other-new",
+    otherInputTestId: "admin-report-objective-other-new",
     otherValue: "วัตถุประสงค์อื่น ๆ ทดสอบ",
-
-    extraOtherInputSelector: "#admin-report-objective-other-41",
-
-    detailSelector: "#admin-report-objective-detail-41",
-    detail: "คำอธิบายวัตถุประสงค์อื่น ๆ",
   },
   {
     title: "ดัชนี/ตัวชี้วัดระดับ นานาชาติ",
@@ -339,9 +332,16 @@ export const objectiveData = [
     code: "12",
     isOther: false,
 
-    detailSelector: "#admin-report-objective-detail-39",
-    detail: "คำอธิบายวัตถุประสงค์ดัชนี/ตัวชี้วัดระดับนานาชาติ",
   },
+  {
+    title: "วัตถุประสงค์อื่นๆ14",
+    searchText: "วัตถุประสงค์อื่นๆ14",
+    optionText: "วัตถุประสงค์อื่นๆ14",
+    value: "256",
+    code: "99",
+    isOther: false,
+
+  }
 ] as const;
 
 export const updateFrequencyUnitData = {
@@ -385,7 +385,7 @@ export const dataFormatData = [
     value: "84",
     code: "99",
     isOther: true,
-    otherInputSelector: "#admin-report-format-other",
+    otherInputSelector: "#admin-report-format-other-new",
     otherValue: "รูปแบบการเก็บข้อมูลอื่น ๆ ทดสอบ",
   },
 ] as const;
@@ -442,6 +442,53 @@ export const licenseData = {
   isOther: true,
   otherInputSelector: "#admin-report-license-other",
   otherValue: "รายละเอียดสัญญาอนุญาตให้ใช้ข้อมูล Others License",
+} as const;
+
+// ------------------------------
+//ระเบียน
+export const recordMetadataData = {
+  // เงื่อนไขในการเข้าถึงข้อมูล
+  accessCondition: {
+    selector: "#admin-report-access-condition",
+    value: "ไม่มี",
+    maxLength: 1000,
+    inputType: "string",
+  },
+
+  // URL
+  url: {
+    selector: "#admin-report-url",
+    value: "https://www.nso.go.th/",
+    // maxLength: 500,
+    inputType: "url",
+  },
+
+  // ผู้สนับสนุนหรือผู้ร่วมดำเนินการ
+  sponsor: {
+    selector: "#admin-report-sponsor",
+  },
+
+  // หน่วยที่ย่อยที่สุดของการจัดเก็บข้อมูล
+  smallestUnit: {
+    selector: "#admin-report-smallest-unit",
+  },
+
+  // ภาษาที่ใช้
+  language: {
+    selector: "#admin-report-language",
+  },
+
+  // ชุดข้อมูลที่มีคุณค่าสูง
+  highValueDataset: {
+    id: "admin-report-high-value-dataset",
+    checked: false,
+  },
+
+  // ข้อมูลอ้างอิง
+  referenceData: {
+    id: "admin-report-reference-data",
+    checked: false,
+  },
 } as const;
 
 // -----------------------------
@@ -1012,6 +1059,7 @@ export const dictionaryRows: DictionaryRowTestData[] = [
 ];
 
 export const metadataValidationCases = [
+    
   {
     key: "record",
     name: "ข้อมูลระเบียน",
@@ -1023,6 +1071,7 @@ export const metadataValidationCases = [
       "กรุณากรอกรายละเอียด",
       "กรุณาเลือกวัตถุประสงค์",
       "กรุณาเลือกหน่วยความถี่ของการปรับปรุงข้อมูล",
+      "กรุณากรอกหน่วยความถี่ของการปรับปรุงข้อมูลอื่นๆ",
       "กรุณาเลือกรูปแบบการเก็บข้อมูล",
       "กรุณาเลือกหมวดหมู่ข้อมูลตามธรรมาภิบาลข้อมูลภาครัฐ",
       "กรุณาเลือกสัญญาอนุญาตให้ใช้ข้อมูล",
@@ -1040,6 +1089,7 @@ export const metadataValidationCases = [
       "กรุณากรอกรายละเอียด",
       "กรุณาเลือกวัตถุประสงค์",
       "กรุณาเลือกหน่วยความถี่ของการปรับปรุงข้อมูล",
+      "กรุณากรอกหน่วยความถี่ของการปรับปรุงข้อมูลอื่นๆ",
       "กรุณาเลือกรูปแบบการเก็บข้อมูล",
       "กรุณาเลือกหมวดหมู่ข้อมูลตามธรรมาภิบาลข้อมูลภาครัฐ",
       "กรุณาเลือกสัญญาอนุญาตให้ใช้ข้อมูล",
@@ -1061,6 +1111,8 @@ export const metadataValidationCases = [
       "กรุณากรอกรายละเอียด",
       "กรุณาเลือกวัตถุประสงค์",
       "กรุณาเลือกหน่วยความถี่ของการปรับปรุงข้อมูล",
+      "กรุณากรอกหน่วยความถี่ของการปรับปรุงข้อมูลอื่นๆ",
+      
       "กรุณาเลือกรูปแบบการเก็บข้อมูล",
       "กรุณาเลือกหมวดหมู่ข้อมูลตามธรรมาภิบาลข้อมูลภาครัฐ",
       "กรุณาเลือกสัญญาอนุญาตให้ใช้ข้อมูล",
@@ -1082,6 +1134,8 @@ export const metadataValidationCases = [
       "กรุณากรอกรายละเอียด",
       "กรุณาเลือกวัตถุประสงค์",
       "กรุณาเลือกหน่วยความถี่ของการปรับปรุงข้อมูล",
+      "กรุณากรอกหน่วยความถี่ของการปรับปรุงข้อมูลอื่นๆ",
+
       "กรุณาเลือกรูปแบบการเก็บข้อมูล",
       "กรุณาเลือกหมวดหมู่ข้อมูลตามธรรมาภิบาลข้อมูลภาครัฐ",
       "กรุณาเลือกสัญญาอนุญาตให้ใช้ข้อมูล",
@@ -1104,7 +1158,66 @@ export const metadataValidationCases = [
       "กรุณาเลือกสัญญาอนุญาตให้ใช้ข้อมูล",
     ],
   },
+
+  {
+    key: "none",
+    name: "ยังไม่เลือกประเภทข้อมูล",
+    messages: [
+      "กรุณาเลือกประเภทข้อมูล",
+      "กรุณากรอกชื่อชุดข้อมูล",
+      "กรุณาเลือกองค์กร",
+      "กรุณากรอกชื่อผู้ติดต่อ",
+      "กรุณากรอกอีเมลผู้ติดต่อ",
+      "กรุณากรอกรายละเอียด",
+      "กรุณาเลือกวัตถุประสงค์",
+      "กรุณาเลือกหน่วยความถี่ของการปรับปรุงข้อมูล",
+      "กรุณาเลือกรูปแบบการเก็บข้อมูล",
+      "กรุณาเลือกหมวดหมู่ข้อมูลตามธรรมาภิบาลข้อมูลภาครัฐ",
+      "กรุณาเลือกสัญญาอนุญาตให้ใช้ข้อมูล",
+    ],
+  },
 ] as const;
+
+export const metadataOtherValidationCases = [
+  {
+    key: "freqUnitOther",
+    name: "หน่วยความถี่ของการปรับปรุงข้อมูลอื่น ๆ",
+    typeKeys: ["record", "statistic", "geoSpatial", "multiple", "other"],
+    selectSelector: "#admin-report-freq-unit",
+    optionText: "อื่น ๆ ระบุ",
+    searchText: "อื่น",
+    expectedMessage: "กรุณากรอกหน่วยความถี่ของการปรับปรุงข้อมูลอื่นๆ",
+  },
+  {
+    key: "formatOther",
+    name: "รูปแบบการเก็บข้อมูลอื่น ๆ",
+    typeKeys: ["record", "statistic", "geoSpatial", "multiple", "other"],
+    selectSelector: "#admin-report-format",
+    optionText: "อื่น ๆ ระบุ",
+    searchText: "อื่น",
+    expectedMessage: "กรุณากรอกข้อมูลรูปแบบการเก็บข้อมูลอื่นๆ",
+  },
+  {
+    key: "licenseOther",
+    name: "สัญญาอนุญาตให้ใช้ข้อมูลอื่น ๆ",
+    typeKeys: ["record", "statistic", "geoSpatial", "multiple", "other"],
+    selectSelector: "#admin-report-license",
+    optionText: "Others License",
+    searchText: "Others",
+    expectedMessage: "กรุณากรอกสัญญาอนุญาตให้ใช้ข้อมูลอื่นๆ",
+  },
+  {
+    key: "geoScopeOther",
+    name: "ขอบเขตเชิงภูมิศาสตร์หรือเชิงพื้นที่อื่น ๆ",
+    typeKeys: ["geoSpatial"],
+    selectSelector: "#admin-report-geo-scope",
+    optionText: "อื่น ๆ ระบุ",
+    searchText: "อื่น",
+    expectedMessage: "กรุณากรอกขอบเขตเชิงภูมิศาสตร์หรือเชิงพื้นที่อื่นๆ",
+  },
+] as const;
+
+
 //จำนวน text
 export const inputLengthTestData = {
   datasetName: {
@@ -1130,3 +1243,7 @@ export const inputLengthTestData = {
 
 
 };
+
+export const deleteReportData = {
+  searchText: "test met1.1",
+} as const;
