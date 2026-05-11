@@ -3,18 +3,22 @@ import { randomText } from "../share/randomText";
 import { selectAntdDateByDay, selectAntdOption } from "../share/selectAntd";
 import { createRandomUploadFile } from "../share/fileRandom";
 import { login } from "../share/login.spec";
+import { logout } from "../share/logout.spec";
 
 test("document test", async ({ page }) => {
   await test.step("เพิ่มข้อมูล", async () => {
     await adddata(page);
+    // await logout(page);
   });
 
   await test.step("แก้ไขข้อมูล", async () => {
     await updatedata(page);
+    // await logout(page);
   });
 
   await test.step("ลบข้อมูล", async () => {
     await deletedata(page);
+    // await logout(page);
   });
 });
 
@@ -91,10 +95,11 @@ async function adddata(page: Page) {
 
 //updatedata
 async function updatedata(page: Page) {
-  await page.goto("/login");
-  login(page);
+  await page.goto("/main");
+  // login(page);
 
   //ไปที่menu จัดการข้อมูลและ เข้าหน้าจัดการรายงาน
+
   await page.locator("button#จัดการข้อมูล-5").click();
   await page.locator("a#จัดการเอกสารเผยแพร่-1").click();
   await expect(page).toHaveURL(/.*manage\/document/);
@@ -164,7 +169,8 @@ async function updatedata(page: Page) {
 
 //deletedata
 async function deletedata(page: Page) {
-  login(page);
+  // login(page);
+  await page.goto("/main");
 
   //ไปที่menu จัดการข้อมูลและ เข้าหน้าจัดการรายงาน
   await page.locator("button#จัดการข้อมูล-5").click();
