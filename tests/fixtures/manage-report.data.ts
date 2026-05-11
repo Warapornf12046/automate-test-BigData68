@@ -1,5 +1,7 @@
 // tests/fixtures/manage-report.data.ts
 
+import { Page } from "@playwright/test";
+
 export const loginData = {
   username: "admin",
   password: "password123",
@@ -44,7 +46,7 @@ export const reportStep1Data = {
 
 // select input ของ ข้อมูลหลากหลายประเภท , ข้อมูลประเภทอื่นๆ เห็นแค่  select input พื้นฐาน แต่ ข้อมูลประเภทอื่นๆจะมีช่อง input เพิ่มเติมให้กรอกข้อมูลประเภทอื่นๆ
 
-export type InputType = "string" | "number" | "email" | "url";
+export type InputType = "string" | "number" | "email" | "url" | "select";
 
 export type InputFieldTestData = {
   selector: string;
@@ -65,6 +67,7 @@ export type SelectTestData = {
   otherInputSelector?: string;
   otherInputTestId?: string;
   otherValue?: string;
+  inputType?: "select";
 };
 
 export type MultiSelectWithDetailData = SelectTestData & {
@@ -89,7 +92,7 @@ export type DictInputField = {
 
 export type DictionaryRowTestData = {
   columnName: DictInputField;
-  dataType: DictInputField;
+  dataType: DictInputField | SelectTestData;
   sizeValue: DictInputField;
   required: boolean;
   description: DictInputField;
@@ -1008,8 +1011,10 @@ export const dictionaryRows: DictionaryRowTestData[] = [
     },
     dataType: {
       value: "VARCHAR2",
-      inputType: "string",
-      maxLength: 50,
+      title: "DATA TYPE",
+      searchText: "VARCHAR2",
+      optionText: "VARCHAR2",
+      code: "",
     },
     sizeValue: {
       value: "13",
@@ -1036,8 +1041,10 @@ export const dictionaryRows: DictionaryRowTestData[] = [
     },
     dataType: {
       value: "VARCHAR2",
-      inputType: "string",
-      maxLength: 50,
+      title: "DATA TYPE",
+      searchText: "VARCHAR2",
+      optionText: "VARCHAR2",
+      code: "",
     },
     sizeValue: {
       value: "255",
@@ -1247,3 +1254,47 @@ export const inputLengthTestData = {
 export const deleteReportData = {
   searchText: "test met1.1",
 } as const;
+
+export const additionalDictionaryRows: DictionaryRowTestData[] = [
+  {
+    columnName: { value: "NEW_COL_1", inputType: "string", maxLength: 100 },
+    dataType: {
+      value: "3",
+      inputType: "select",
+      title: "DATA TYPE",
+      searchText: "NUMBER",
+      optionText: "NUMBER",
+      code: "3",
+    },
+    sizeValue: { value: "10", inputType: "number", maxLength: 10 },
+    required: false,
+    description: { value: "คอลัมน์ใหม่ 1", inputType: "string", maxLength: 500 },
+    sampleData: { value: "999", inputType: "string", maxLength: 500 },
+  },
+  {
+    columnName: { value: "NEW_COL_2", inputType: "string", maxLength: 100 },
+    dataType: {
+      value: "4",
+      inputType: "select",
+      title: "DATA TYPE",
+      searchText: "DATE",
+      optionText: "DATE",
+      code: "4",
+    },
+    sizeValue: { value: "", inputType: "number", maxLength: 10 },
+    required: true,
+    description: { value: "คอลัมน์ใหม่ 2", inputType: "string", maxLength: 500 },
+    sampleData: { value: "2024-01-01", inputType: "string", maxLength: 500 },
+  },
+];
+
+export async function clearBrowserState(page: Page) {
+  await page.context().clearCookies();
+
+  await page.goto("/login", { waitUntil: "domcontentloaded" });
+
+  await page.evaluate(() => {
+    localStorage.clear();
+    sessionStorage.clear();
+  });
+}

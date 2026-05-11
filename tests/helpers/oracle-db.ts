@@ -128,9 +128,9 @@ export async function getDatasetSnapshotById(datasetGroupId: number) {
 
     return {
       latestId: datasetGroupId,
-      dataset: datasetResult.rows ?? [],
-      metadata: metadataResult.rows ?? [],
-      dicts: dictResult.rows ?? [],
+      dataset: (datasetResult.rows as any[]) ?? [],
+      metadata: (metadataResult.rows as any[]) ?? [],
+      dictionary: (dictResult.rows as any[]) ?? [], // ใช้ชื่อ dictionary ให้ตรงกับที่ spec เรียก
     };
   } finally {
     await connection.close();
@@ -152,7 +152,7 @@ export async function expectDatasetSavedById(datasetGroupId: number) {
     );
   }
 
-  if (snapshot.dicts.length === 0) {
+  if (snapshot.dictionary.length === 0) {
     throw new Error(
       `ไม่พบข้อมูลใน TB_DATASET_GROUPS_DICT สำหรับ DATASET_GROUPS_ID ${datasetGroupId}`,
     );
@@ -160,6 +160,66 @@ export async function expectDatasetSavedById(datasetGroupId: number) {
 
   return snapshot;
 }
+
+export async function expectMetadataFieldValue(
+  datasetGroupId: number,
+  metadataId: number,
+  expectedValue: string | null,
+  expectedOtherValue?: string | null,
+) {
+  const connection = await getOracleConnection();
+
+  try {
+    const result = await connection.execute(
+      `
+      SELECT *
+      FROM TB_DATASET_GROUPS_METAD
+      WHERE DATASET_GROUPS_ID = :datasetGroupId
+        AND METADATA_ID = :metadataId
+      `,
+      { datasetGroupId, metadataId },
+      { outFormat: oracledb.OUT_FORMAT_OBJECT },
+    );
+
+    const rows = result.rows as any[];
+    
+    if (expectedValue === null) {
+      if (rows && rows.length > 0) {
+        throw new Error(
+          `คาดหวังว่า METADATA_ID ${metadataId} จะไม่มีค่า (null) แต่พบข้อมูล ${rows.length} แถว`,
+        );
+      }
+      return;
+    }
+
+    if (!rows || rows.length === 0) {
+      throw new Error(
+        `ไม่พบข้อมูลใน TB_DATASET_GROUPS_METAD สำหรับ METADATA_ID ${metadataId}`,
+      );
+    }
+
+    // Check if the expected value exists among the rows
+    const match = rows.find((row) => {
+      const valueMatch = row.METADATA_VALUE === expectedValue;
+      if (expectedOtherValue !== undefined && expectedOtherValue !== null) {
+        return valueMatch && row.OTHER_VALUE === expectedOtherValue;
+      }
+      return valueMatch;
+    });
+
+    if (!match) {
+      throw new Error(
+        `ค่า METADATA_ID ${metadataId} ไม่ตรงตามคาดหวัง\nคาดหวัง: ${expectedValue} (other: ${expectedOtherValue})\nพบจริง: ${JSON.stringify(rows.map((r) => ({ value: r.METADATA_VALUE, other: r.OTHER_VALUE })))}`,
+      );
+    }
+
+    return match;
+  } finally {
+    await connection.close();
+  }
+}
+
+
 
 export async function expectDatasetDeleted(datasetGroupId: number) {
   const snapshot = await getDatasetSnapshotById(datasetGroupId);
@@ -170,7 +230,7 @@ export async function expectDatasetDeleted(datasetGroupId: number) {
   const isHardDeleted =
     snapshot.dataset.length === 0 &&
     snapshot.metadata.length === 0 &&
-    snapshot.dicts.length === 0;
+    snapshot.dictionary.length === 0;
 
   const isSoftDeleted =
     snapshot.dataset.length === 1 && datasetRow?.STATUS !== "Y";
@@ -181,7 +241,7 @@ export async function expectDatasetDeleted(datasetGroupId: number) {
         `คาดว่าข้อมูล DATASET_GROUPS_ID ${datasetGroupId} ถูกลบหรือปิดใช้งานแล้ว`,
         `TB_DATASET_GROUPS: ${snapshot.dataset.length} row(s)`,
         `TB_DATASET_GROUPS_METAD: ${snapshot.metadata.length} row(s)`,
-        `TB_DATASET_GROUPS_DICT: ${snapshot.dicts.length} row(s)`,
+        `TB_DATASET_GROUPS_DICT: ${snapshot.dictionary.length} row(s)`,
         `STATUS: ${datasetRow?.STATUS ?? "(none)"}`,
       ].join("\n"),
     );

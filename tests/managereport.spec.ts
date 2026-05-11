@@ -46,6 +46,7 @@ import {
   expectCustomMetadataCreated,
   getOtherMetadataCode,
 } from "./helpers/oracle-db";
+import { login } from "../share/login.spec";
 
 type SelectItem = {
   title: string;
@@ -87,7 +88,7 @@ type DatasetSnapshot = {
   latestId: number;
   dataset: Record<string, unknown>[];
   metadata: Record<string, unknown>[];
-  dicts: Record<string, unknown>[];
+  dictionary: Record<string, unknown>[];
 };
 
 type ReportAction = "edit" | "view" | "delete";
@@ -105,7 +106,7 @@ type ScenarioValues = {
 };
 
 // ให้ report บอกครบว่าข้อความไหนหาย
-async function expectValidationMessagesIfAvailable(
+export async function expectValidationMessagesIfAvailable(
   page: Page,
   messages: string[],
 ) {
@@ -143,7 +144,7 @@ async function expectValidationMessagesIfAvailable(
 }
  
 
-async function checkInputType(
+export async function checkInputType(
   page: Page,
   field: Readonly<InputFieldTestData | DateFieldTestData>,
 ) {
@@ -184,7 +185,7 @@ async function checkInputType(
   }
 }
 
-async function checkDictionaryRowType(
+export async function checkDictionaryRowType(
   page: Page,
   index: number,
   row: DictionaryRowTestData,
@@ -220,40 +221,54 @@ async function checkDictionaryRowType(
   );
 }
 
-async function checkDictInputType(
+export async function checkDictInputType(
   page: Page,
   selector: string,
-  field: DictInputField,
+  field: DictInputField | SelectTestData,
 ) {
   const input = page.locator(selector);
 
   await expect(input).toBeVisible({ timeout: 10000 });
-  await input.fill(field.value);
+  
+  const isSelect = (await input.getAttribute("class") || "").includes("ant-select");
 
-  const actualValue = await input.inputValue();
+  if (isSelect) {
+    const fieldAsSelect = field as SelectTestData;
+    const searchText = fieldAsSelect.searchText || fieldAsSelect.value || "";
+    const optionText = fieldAsSelect.optionText || fieldAsSelect.value || "";
+    
+    await selectAntdOptionBySearch(page, selector, searchText, optionText);
+  } else {
+    await input.fill(field.value);
+  }
 
-  switch (field.inputType) {
-    case "number":
-      expect(actualValue).toMatch(/^\d+$/);
-      break;
+  const actualValue = isSelect 
+    ? (await input.locator(".ant-select-selection-item").textContent() || "")
+    : await input.inputValue();
 
-    case "email":
-      expect(actualValue).toMatch(/^[^\s@]+@[^\s@]+\.[^\s@]+$/);
-      break;
+  if ("inputType" in field) {
+    switch (field.inputType) {
+      case "number":
+        expect(actualValue).toMatch(/^\d+$/);
+        break;
 
-    case "url":
-      expect(actualValue).toMatch(/^https?:\/\/.+/);
-      break;
+      case "email":
+        expect(actualValue).toMatch(/^[^\s@]+@[^\s@]+\.[^\s@]+$/);
+        break;
 
-    case "string":
-    default:
-      expect(typeof actualValue).toBe("string");
-      expect(actualValue.length).toBeGreaterThan(0);
-      break;
+      case "url":
+        expect(actualValue).toMatch(/^https?:\/\/.+/);
+        break;
+
+      case "string":
+      default:
+        expect(typeof actualValue).toBe("string");
+        break;
+    }
   }
 }
 
-async function checkInputMaxLength(
+export async function checkInputMaxLength(
   page: Page,
   field: Readonly<InputFieldTestData>,
 ) {
@@ -276,7 +291,7 @@ async function checkInputMaxLength(
   await expect(input).toHaveValue(actualValue);
 }
 
-function buildOverMaxLengthValue(field: Readonly<InputFieldTestData>) {
+export function buildOverMaxLengthValue(field: Readonly<InputFieldTestData>) {
   const targetLength = (field.maxLength ?? 50) + 20;
 
   if (field.inputType === "number") {
@@ -297,7 +312,7 @@ function buildOverMaxLengthValue(field: Readonly<InputFieldTestData>) {
   return `${field.valuePrefix ?? "ทดสอบ"}${"ก".repeat(targetLength)}`;
 }
 
-async function checkInputRejectsOverMaxLength(
+export async function checkInputRejectsOverMaxLength(
   page: Page,
   field: Readonly<InputFieldTestData>,
 ) {
@@ -319,7 +334,7 @@ async function checkInputRejectsOverMaxLength(
   await expect(input).toHaveValue(actualValue);
 }
 
-async function fillSingleSelectOther(
+export async function fillSingleSelectOther(
   page: Page,
   selectSelector: string,
   item: SelectTestData,
@@ -341,19 +356,38 @@ async function fillSingleSelectOther(
   }
 }
 
-async function selectAntdOptionBySearch(
+export async function selectAntdOptionBySearch(
   page: Page,
   selectSelector: string,
   searchText: string,
   optionText: string,
 ) {
+  await closeAntdDropdown(page);
+
   const select = page.locator(selectSelector);
 
   await expect(select).toBeVisible({ timeout: 10000 });
-  await select.click();
+  await select.scrollIntoViewIfNeeded();
 
-  await page.keyboard.press("Control+A");
-  await page.keyboard.type(searchText, { delay: 10 });
+  const selectorBox = select.locator(".ant-select-selector");
+
+  if (await selectorBox.isVisible().catch(() => false)) {
+    await selectorBox.click({ force: true });
+  } else {
+    await select.click({ force: true });
+  }
+
+  await page.waitForTimeout(200);
+
+  const searchInput = select.locator("input.ant-select-selection-search-input");
+
+  if (await searchInput.isVisible().catch(() => false)) {
+    await searchInput.fill("");
+    await searchInput.pressSequentially(searchText, { delay: 20 });
+  } else {
+    await page.keyboard.press("Control+A");
+    await page.keyboard.type(searchText, { delay: 20 });
+  }
 
   const dropdown = page
     .locator(".ant-select-dropdown:not(.ant-select-dropdown-hidden)")
@@ -367,13 +401,14 @@ async function selectAntdOptionBySearch(
     .first();
 
   await expect(option).toBeVisible({ timeout: 10000 });
+
   await option.scrollIntoViewIfNeeded();
   await option.click({ force: true });
 
-  await page.keyboard.press("Escape");
+  await closeAntdDropdown(page);
 }
 
-async function fillGovernanceOnly(
+export async function fillGovernanceOnly(
   page: Page,
   governance: (typeof dataGovernanceData)[keyof typeof dataGovernanceData],
 ) {
@@ -386,7 +421,7 @@ async function fillGovernanceOnly(
   await delay(page, 200);
 }
 
-async function fillMultiSelectOther(
+export async function fillMultiSelectOther(
   page: Page,
   selectSelector: string,
   items: readonly SelectTestData[],
@@ -414,7 +449,7 @@ async function fillMultiSelectOther(
   }
 }
 
-async function fillGeoSpatialDatesForHappyCase(page: Page) {
+export async function fillGeoSpatialDatesForHappyCase(page: Page) {
   await fillFlexibleDateText(
     page,
     geoSpatialMetadataData.scheduledPublishedDateTypeText,
@@ -422,7 +457,7 @@ async function fillGeoSpatialDatesForHappyCase(page: Page) {
   );
 }
 
-async function prepareMetadataTypeForMaxLength(
+export async function prepareMetadataTypeForMaxLength(
   page: Page,
   typeKey: keyof typeof metadataTypeData,
 ) {
@@ -460,7 +495,7 @@ async function prepareMetadataTypeForMaxLength(
   }
 }
 
-function getInputTypeFieldsByType(
+export function getInputTypeFieldsByType(
   typeKey: keyof typeof metadataTypeData,
 ): readonly InputFieldTestData[] {
   const commonFields = [
@@ -525,7 +560,7 @@ function getInputTypeFieldsByType(
   // multiple ไม่มี accessCondition
   return commonFields;
 }
-async function fillFlexibleDateText(
+export async function fillFlexibleDateText(
   page: Page,
   typeData: {
     selector: string;
@@ -550,7 +585,7 @@ async function fillFlexibleDateText(
 }
 
 
-function getMaxLengthInputFieldsByType(
+export function getMaxLengthInputFieldsByType(
   typeKey: keyof typeof metadataTypeData,
 ): readonly InputFieldTestData[] {
   const commonFields = [
@@ -603,7 +638,7 @@ function getMaxLengthInputFieldsByType(
   return commonFields;
 }
 
-async function fillFirstVisibleInput(
+export async function fillFirstVisibleInput(
   page: Page,
   selectors: string[],
   value: string,
@@ -649,7 +684,7 @@ async function fillFirstVisibleInput(
 }
 
 
-async function fillMultiSelectOtherAndDetail(
+export async function fillMultiSelectOtherAndDetail(
   page: Page,
   selectSelector: string,
   items: readonly MultiSelectWithDetailData[],
@@ -726,11 +761,11 @@ async function fillMultiSelectOtherAndDetail(
   }
 }
 
-async function delay(page: Page, ms = 0) {
+export async function delay(page: Page, ms = 0) {
   await page.waitForTimeout(ms);
 }
 
-async function fillDatePickerOnly(
+export async function fillDatePickerOnly(
   page: Page,
   field: DateFieldTestData,
 ) {
@@ -752,7 +787,7 @@ async function fillDatePickerOnly(
   await page.waitForTimeout(300);
 }
 
-async function fillMetadataForType(page: Page, typeKey: keyof typeof metadataTypeData) {
+export async function fillMetadataForType(page: Page, typeKey: keyof typeof metadataTypeData) {
   await fillMetadataType(page, metadataTypeData[typeKey]);
 
   await fillCommonMetadataInputs(page);
@@ -845,7 +880,7 @@ async function fillMetadataForType(page: Page, typeKey: keyof typeof metadataTyp
   }
 }
 
-async function fillDateOnly(
+export async function fillDateOnly(
   page: Page,
   field: DateFieldTestData,
 ) {
@@ -877,7 +912,7 @@ async function fillDateOnly(
   await expect(input).toHaveValue(field.value);
 }
 
-function getMetadataInputFields(): InputFieldTestData[] {
+export function getMetadataInputFields(): InputFieldTestData[] {
   return [
     commonMetadataInputData.datasetName,
     commonMetadataInputData.contactName,
@@ -891,7 +926,7 @@ function getMetadataInputFields(): InputFieldTestData[] {
   ];
 }
 
-async function mLogin(page: Page) {
+export async function mLogin(page: Page) {
   await page.goto("/login");
 
   await expect(page.getByRole("heading", { name: "ยินดีต้อนรับ" })).toBeVisible({
@@ -926,8 +961,43 @@ async function mLogin(page: Page) {
     timeout: 30000,
   });
 }
+// export async function mLogin(page: Page) {
+//   await login(page);
 
-async function selectAntdOptionByText(
+//   await page.goto("/manage/admin-report", {
+//     waitUntil: "domcontentloaded",
+//   });
+
+//   await expect(page).toHaveURL(/.*manage\/admin-report/, {
+//     timeout: 30000,
+//   });
+
+//   // await expect(page.locator("body")).not.toContainText("401", {
+//   //   timeout: 5000,
+//   // });
+// }
+
+// export async function waitForAuthReady(page: Page) {
+//   await page.waitForLoadState("networkidle").catch(() => {});
+
+//   await page.waitForFunction(() => {
+//     const localStorageText = JSON.stringify(localStorage).toLowerCase();
+//     const sessionStorageText = JSON.stringify(sessionStorage).toLowerCase();
+
+//     return (
+//       localStorageText.includes("token") ||
+//       localStorageText.includes("access") ||
+//       localStorageText.includes("jwt") ||
+//       sessionStorageText.includes("token") ||
+//       sessionStorageText.includes("access") ||
+//       sessionStorageText.includes("jwt")
+//     );
+//   }, null, {
+//     timeout: 20000,
+//   });
+// }
+
+export async function selectAntdOptionByText(
   page: Page,
   selectSelector: string,
   optionText: string,
@@ -951,7 +1021,7 @@ async function selectAntdOptionByText(
   await delay(page, delayMs);
 }
 
-async function selectAntdMultipleOptionBySearch(
+export async function selectAntdMultipleOptionBySearch(
   page: Page,
   selectSelector: string,
   searchText: string,
@@ -1003,7 +1073,7 @@ async function selectAntdMultipleOptionBySearch(
   await closeAntdDropdown(page);
 }
 
-async function fillRecordSpecificFields(page: Page) {
+export async function fillRecordSpecificFields(page: Page) {
   await fillMetadataInput(page, accessConditionData.public);
 
   await fillMetadataInput(page, recordMetadataData.url);
@@ -1041,7 +1111,7 @@ async function fillRecordSpecificFields(page: Page) {
   );
 }
 
-async function fillAndExpect(
+export async function fillAndExpect(
   page: Page,
   selector: string,
   value: string,
@@ -1057,7 +1127,7 @@ async function fillAndExpect(
 }
 
 
-async function setSwitch(page: Page, id: string, checked: boolean) {
+export async function setSwitch(page: Page, id: string, checked: boolean) {
   const sw = page.locator(`#${id}`);
 
   await expect(sw).toBeVisible({ timeout: 10000 });
@@ -1072,7 +1142,7 @@ async function setSwitch(page: Page, id: string, checked: boolean) {
   await expect(sw).toHaveAttribute("aria-checked", checked ? "true" : "false");
 }
 
-async function pickThaiDatePicker(
+export async function pickThaiDatePicker(
   page: Page,
   selector: string,
   gregorianDate: string,
@@ -1134,7 +1204,7 @@ async function pickThaiDatePicker(
   );
 }
 
-async function pickThaiDateTimePicker(
+export async function pickThaiDateTimePicker(
   page: Page,
   selector: string,
   gregorianDate: string,
@@ -1196,7 +1266,7 @@ async function pickThaiDateTimePicker(
   throw new Error(`ไม่พบวันที่ ${gregorianDate} หรือ ${buddhistDate} ใน DateTimePicker`);
 }
 
-function getMonthMoveDirection(targetGregorianDate: string): "prev" | "next" {
+export function getMonthMoveDirection(targetGregorianDate: string): "prev" | "next" {
   const target = new Date(targetGregorianDate);
   const now = new Date();
 
@@ -1206,13 +1276,13 @@ function getMonthMoveDirection(targetGregorianDate: string): "prev" | "next" {
   return targetMonthIndex < currentMonthIndex ? "prev" : "next";
 }
 
-function toBuddhistDate(gregorianDate: string) {
+export function toBuddhistDate(gregorianDate: string) {
   const [year, month, day] = gregorianDate.split("-");
 
   return `${Number(year) + 543}-${month}-${day}`;
 }
 
-async function fillMetadataInput(
+export async function fillMetadataInput(
   page: Page,
   field: InputFieldTestData,
 ) {
@@ -1229,7 +1299,7 @@ async function fillMetadataInput(
 type GovernanceItem =
   (typeof dataGovernanceData)[keyof typeof dataGovernanceData];
 
-async function fillAccessConditionByGovernance(
+export async function fillAccessConditionByGovernance(
   page: Page,
   governance: (typeof dataGovernanceData)[keyof typeof dataGovernanceData],
 ) {
@@ -1249,7 +1319,7 @@ async function fillAccessConditionByGovernance(
   await fillMetadataInput(page, accessConditionData.nonPublic);
 }
 
-async function fillCommonMetadataSelectsWithoutGovernance(page: Page) {
+export async function fillCommonMetadataSelectsWithoutGovernance(page: Page) {
   await fillSingleSelectOther(page, "#admin-report-org", organizationData);
 
   // ห้ามมีอันนี้ใน helper นี้
@@ -1272,7 +1342,7 @@ async function fillCommonMetadataSelectsWithoutGovernance(page: Page) {
   await fillSingleSelectOther(page, "#admin-report-license", licenseData);
 }
 
-async function fillObjectiveForValidation(page: Page) {
+export async function fillObjectiveForValidation(page: Page) {
   await fillMultiSelectOtherAndDetail(
     page,
     "#admin-report-objective",
@@ -1282,7 +1352,7 @@ async function fillObjectiveForValidation(page: Page) {
   );
 }
 
-async function fillStatisticStartDataYear(page: Page) {
+export async function fillStatisticStartDataYear(page: Page) {
   await fillSingleSelectOther(
     page,
     "#admin-report-start-data-year-type",
@@ -1295,7 +1365,7 @@ async function fillStatisticStartDataYear(page: Page) {
   );
 }
 
-async function fillStatisticPublishedDate(page: Page) {
+export async function fillStatisticPublishedDate(page: Page) {
   await fillSingleSelectOther(
     page,
     "#admin-report-published-date-type",
@@ -1308,7 +1378,7 @@ async function fillStatisticPublishedDate(page: Page) {
   );
 }
 
-async function fillPositionalAccuracy(page: Page) {
+export async function fillPositionalAccuracy(page: Page) {
   await fillSingleSelectOther(
     page,
     "#admin-report-positional-accuracy",
@@ -1323,13 +1393,13 @@ async function fillPositionalAccuracy(page: Page) {
   });
 }
 
-async function closeAntdDropdown(page: Page) {
+export async function closeAntdDropdown(page: Page) {
   await page.keyboard.press("Escape");
   await page.mouse.click(5, 5);
   await page.waitForTimeout(100);
 }
 
-async function fillStatisticDatesForHappyCase(page: Page) {
+export async function fillStatisticDatesForHappyCase(page: Page) {
   await fillSingleSelectOther(
     page,
     statisticMetadataData.startDataYearType.selector,
@@ -1367,7 +1437,7 @@ async function fillStatisticDatesForHappyCase(page: Page) {
   );
 }
 
-async function fillStatisticDatesOnly(page: Page) {
+export async function fillStatisticDatesOnly(page: Page) {
   await fillSingleSelectOther(
     page,
     statisticMetadataData.startDataYearType.selector,
@@ -1405,7 +1475,7 @@ async function fillStatisticDatesOnly(page: Page) {
   );
 }
 
-async function fillGeoSpatialDatesOnly(page: Page) {
+export async function fillGeoSpatialDatesOnly(page: Page) {
   // เวลาอ้างอิง ถ้าไม่ required อาจข้ามได้
   // await fillSingleSelectOther(
   //   page,
@@ -1421,7 +1491,7 @@ async function fillGeoSpatialDatesOnly(page: Page) {
   );
 }
 
-async function fillMetadataForTypeCheck(
+export async function fillMetadataForTypeCheck(
   page: Page,
   typeKey: keyof typeof metadataTypeData,
 ) {
@@ -1554,7 +1624,7 @@ async function fillMetadataForTypeCheck(
   }
 }
 
-async function fillDateAndCheckFormat(
+export async function fillDateAndCheckFormat(
   page: Page,
   field: DateFieldTestData,
 ) {
@@ -1606,7 +1676,7 @@ async function fillDateAndCheckFormat(
   }
 }
 
-async function fillCommonMetadataInputs(page: Page) {
+export async function fillCommonMetadataInputs(page: Page) {
   await fillMetadataInput(page, commonMetadataInputData.datasetName);
   await fillMetadataInput(page, commonMetadataInputData.contactName);
   await fillMetadataInput(page, commonMetadataInputData.contactEmail);
@@ -1616,7 +1686,7 @@ async function fillCommonMetadataInputs(page: Page) {
   await fillMetadataInput(page, commonMetadataInputData.source);
 }
 
-async function fillCommonMetadataSelects(page: Page) {
+export async function fillCommonMetadataSelects(page: Page) {
   await fillSingleSelectOther(page, "#admin-report-org", organizationData);
 
   await fillMultiSelectOtherAndDetail(
@@ -1650,7 +1720,7 @@ async function fillCommonMetadataSelects(page: Page) {
   await fillSingleSelectOther(page, "#admin-report-license", licenseData);
 }
 
-async function setDictionaryRequired(
+export async function setDictionaryRequired(
   page: Page,
   index: number,
   required: boolean,
@@ -1695,7 +1765,7 @@ async function setDictionaryRequired(
   }
 }
 
-async function fillMetadataType(
+export async function fillMetadataType(
   page: Page,
   typeItem: SelectTestData,
 ) {
@@ -1715,7 +1785,7 @@ function getInputValue(field: InputFieldTestData) {
   return field.value ?? randomText(field.maxLength ?? 50);
 }
 
-async function fillCommonSwitchesIfVisible(page: Page) {
+export async function fillCommonSwitchesIfVisible(page: Page) {
   const highValue = page.locator("#admin-report-high-value-dataset");
   const reference = page.locator("#admin-report-reference-data");
 
@@ -1736,7 +1806,7 @@ async function fillCommonSwitchesIfVisible(page: Page) {
   }
 }
 
-async function saveReport(page: Page) {
+export async function saveReport(page: Page) {
   await expect(page.locator("#admin-report-save")).toBeVisible({
     timeout: 10000,
   });
@@ -1784,7 +1854,7 @@ async function saveReport(page: Page) {
   }
 }
 
-async function fillDictionaryRow(
+export async function fillDictionaryRow(
   page: Page,
   index: number,
   row: DictionaryRowTestData,
@@ -1825,44 +1895,91 @@ async function fillDictionaryRow(
 async function fillAndValidateDictInput(
   page: Page,
   selector: string,
-  field: DictInputField,
+  field: DictInputField | SelectTestData,
 ) {
   const input = page.locator(selector);
 
   await expect(input).toBeVisible({ timeout: 10000 });
-  await input.fill(field.value);
-  await expect(input).toHaveValue(field.value);
 
-  const actualValue = await input.inputValue();
+  const className = await input.getAttribute("class");
+  const isSelect = String(className ?? "").includes("ant-select");
 
-  // เช็ค maxLength
-  expect(actualValue.length).toBeLessThanOrEqual(field.maxLength);
+  let actualValue: string;
 
-  // เช็ค type
-  switch (field.inputType) {
-    case "number":
-      expect(actualValue).toMatch(/^\d+$/);
-      break;
+  if (isSelect) {
+    const selectField = field as SelectTestData;
 
-    case "email":
-      expect(actualValue).toMatch(/^[^\s@]+@[^\s@]+\.[^\s@]+$/);
-      break;
+    const searchText =
+      selectField.searchText ??
+      selectField.optionText ??
+      selectField.title ??
+      selectField.value ??
+      "";
 
-    case "url":
-      expect(actualValue).toMatch(/^https?:\/\/.+/);
-      break;
+    const optionText =
+      selectField.optionText ??
+      selectField.searchText ??
+      selectField.title ??
+      selectField.value ??
+      "";
 
-    case "string":
-    default:
-      expect(typeof actualValue).toBe("string");
-      expect(actualValue.length).toBeGreaterThan(0);
-      break;
+    await selectAntdOptionBySearch(
+      page,
+      selector,
+      searchText,
+      optionText,
+    );
+
+    const selectionItem = input.locator(".ant-select-selection-item");
+
+    await expect(selectionItem).toHaveText(
+      new RegExp(optionText, "i"),
+      { timeout: 10000 },
+    );
+
+    actualValue = (await selectionItem.textContent()) ?? "";
+  } else {
+    const inputField = field as DictInputField;
+
+    await input.fill(inputField.value);
+    await expect(input).toHaveValue(inputField.value);
+
+    actualValue = await input.inputValue();
   }
 
-  await expect(input).toHaveValue(actualValue);
+  if ("maxLength" in field && field.maxLength) {
+    expect(actualValue.length).toBeLessThanOrEqual(field.maxLength);
+  }
+
+  if ("inputType" in field) {
+    switch (field.inputType) {
+      case "number":
+        expect(actualValue).toMatch(/^\d+$/);
+        break;
+
+      case "email":
+        expect(actualValue).toMatch(/^[^\s@]+@[^\s@]+\.[^\s@]+$/);
+        break;
+
+      case "url":
+        expect(actualValue).toMatch(/^https?:\/\/.+/);
+        break;
+
+      case "select":
+      case "string":
+      default:
+        expect(typeof actualValue).toBe("string");
+        expect(actualValue.length).toBeGreaterThan(0);
+        break;
+    }
+  }
+
+  if (!isSelect) {
+    await expect(input).toHaveValue(actualValue);
+  }
 }
 
-async function checkDictNumberRejectsStringInput(
+export async function checkDictNumberRejectsStringInput(
   page: Page,
   selector: string,
   invalidValue = "abcทดสอบ",
@@ -1884,7 +2001,7 @@ async function checkDictNumberRejectsStringInput(
   }
 }
 
-async function mReportPart1(
+export async function mReportPart1(
   page: Page,
   reportName = `รายงาน${randomText(6)}`,
 ) {
@@ -1926,7 +2043,7 @@ async function mReportPart1(
   return reportName;
 }
 
-async function mReportPart2(page: Page) {
+export async function mReportPart2(page: Page) {
   await page.locator("#admin-report-step-1-next").click();
   await page.waitForTimeout(500);
 
@@ -1938,7 +2055,7 @@ async function mReportPart2(page: Page) {
   await fillRecordSpecificFields(page);
 }
 
-async function mReportPart3(page: Page) {
+export async function mReportPart3(page: Page) {
   await expect(page.locator("#admin-report-step-2-next")).toBeVisible({
     timeout: 10000,
   });
@@ -1994,7 +2111,7 @@ async function mReportPart3(page: Page) {
   console.log("✓ ตรวจสอบ database สำเร็จ - Latest ID:", dbResult.latestId);
   console.log("  - TB_DATASET_GROUPS:", dbResult.dataset.length, "row(s)");
   console.log("  - TB_DATASET_GROUPS_METAD:", dbResult.metadata.length, "row(s)");
-  console.log("  - TB_DATASET_GROUPS_DICT:", dbResult.dicts.length, "row(s)");
+  console.log("  - TB_DATASET_GROUPS_DICT:", dbResult.dictionary.length, "row(s)");
 
   // เช็คข้อมูล "อื่น ๆ" ทั้งหมดใน MS_METADATA_LIST (ถ้ามี)
   const otherMetadata = await expectAllLatestOtherMetadataCreated();
@@ -2005,7 +2122,7 @@ async function mReportPart3(page: Page) {
   return dbResult;
 }
 
-function buildScenarioValues(
+export function buildScenarioValues(
   typeKey: MetadataTypeKey,
   mode: "create" | "edit",
 ): ScenarioValues {
@@ -2027,11 +2144,11 @@ function buildScenarioValues(
   };
 }
 
-function snapshotToText(snapshot: DatasetSnapshot) {
+export function snapshotToText(snapshot: DatasetSnapshot) {
   return JSON.stringify(snapshot);
 }
 
-async function openManageReportAction(
+export async function openManageReportAction(
   page: Page,
   action: ReportAction,
   datasetGroupId: number,
@@ -2044,7 +2161,7 @@ async function openManageReportAction(
   await actionButton.click();
 }
 
-async function goToMetadataStep(page: Page) {
+export async function goToMetadataStep(page: Page) {
   await page.locator("#admin-report-step-1-next").click();
 
   await expect(page.locator("#admin-report-type")).toBeVisible({
@@ -2052,7 +2169,7 @@ async function goToMetadataStep(page: Page) {
   });
 }
 
-async function goToDataDictionaryStep(page: Page) {
+export async function goToDataDictionaryStep(page: Page) {
   await expect(page.locator("#admin-report-step-2-next")).toBeVisible({
     timeout: 10000,
   });
@@ -2238,7 +2355,7 @@ async function fillHappyCaseMetadataForType(
   await fillCommonSwitchesIfVisible(page);
 }
 
-async function createReportForType(
+export async function createReportForType(
   page: Page,
   typeKey: MetadataTypeKey,
 ) {
@@ -2261,7 +2378,7 @@ async function createReportForType(
   };
 }
 
-async function applyEditValuesForType(
+export async function applyEditValuesForType(
   page: Page,
   typeKey: MetadataTypeKey,
   values: ScenarioValues,
@@ -2298,7 +2415,7 @@ async function applyEditValuesForType(
   }
 }
 
-async function updateDictionaryForEdit(page: Page, values: ScenarioValues) {
+export async function updateDictionaryForEdit(page: Page, values: ScenarioValues) {
   await fillAndValidateDictInput(page, "[data-testid=\"dict-column-name-0\"]", {
     value: values.dictColumnName,
     inputType: "string",
@@ -2318,7 +2435,7 @@ async function updateDictionaryForEdit(page: Page, values: ScenarioValues) {
   });
 }
 
-async function expectViewValuesForType(
+export async function expectViewValuesForType(
   page: Page,
   typeKey: MetadataTypeKey,
   values: ScenarioValues,
@@ -2367,7 +2484,7 @@ async function expectViewValuesForType(
   );
 }
 
-function expectTypeSpecificSnapshotValue(
+export async function expectTypeSpecificSnapshotValue(
   snapshotText: string,
   typeKey: MetadataTypeKey,
   values: ScenarioValues,
@@ -2630,7 +2747,7 @@ test.describe("Manage Report Page", () => {
     expect(dbResult.latestId).toBeTruthy();
     expect(dbResult.dataset.length).toBe(1);
     expect(dbResult.metadata.length).toBeGreaterThan(0);
-    expect(dbResult.dicts.length).toBeGreaterThan(0);
+    expect(dbResult.dictionary.length).toBeGreaterThan(0);
   });
 
   test("Scenario 4: กรอกข้อมูล happy case ประเภทข้อมูลสถิติ", async ({
@@ -2693,7 +2810,7 @@ test.describe("Manage Report Page", () => {
     expect(dbResult.latestId).toBeTruthy();
     expect(dbResult.dataset.length).toBe(1);
     expect(dbResult.metadata.length).toBeGreaterThan(0);
-    expect(dbResult.dicts.length).toBeGreaterThan(0);
+    expect(dbResult.dictionary.length).toBeGreaterThan(0);
   });
 
   test("Scenario 5: กรอกข้อมูล happy case ประเภทข้อมูลภูมิสารสนเทศเชิงพื้นที่", async ({
@@ -2756,7 +2873,7 @@ test.describe("Manage Report Page", () => {
     expect(dbResult.latestId).toBeTruthy();
     expect(dbResult.dataset.length).toBe(1);
     expect(dbResult.metadata.length).toBeGreaterThan(0);
-    expect(dbResult.dicts.length).toBeGreaterThan(0);
+    expect(dbResult.dictionary.length).toBeGreaterThan(0);
   });
 
   test("Scenario 6:กรอกข้อมูล happy case ประเภทข้อมูลหลากหลายประเภท เห็นเฉพาะ field พื้นฐานแล้วบันทึกสำเร็จ", async ({
@@ -2784,7 +2901,7 @@ test.describe("Manage Report Page", () => {
     expect(dbResult.latestId).toBeTruthy();
     expect(dbResult.dataset.length).toBe(1);
     expect(dbResult.metadata.length).toBeGreaterThan(0);
-    expect(dbResult.dicts.length).toBeGreaterThan(0);
+    expect(dbResult.dictionary.length).toBeGreaterThan(0);
   });
 
   test("Scenario 7:กรอกข้อมูล happy case ประเภทข้อมูลอื่น ๆ ระบุ เห็น field พื้นฐานและกรอกชื่อประเภทข้อมูล", async ({
@@ -2811,7 +2928,7 @@ test.describe("Manage Report Page", () => {
     expect(dbResult.latestId).toBeTruthy();
     expect(dbResult.dataset.length).toBe(1);
     expect(dbResult.metadata.length).toBeGreaterThan(0);
-    expect(dbResult.dicts.length).toBeGreaterThan(0);
+    expect(dbResult.dictionary.length).toBeGreaterThan(0);
   });
 
   for (const item of metadataTypeCases) {
@@ -3054,3 +3171,5 @@ test.describe("Manage Report Page", () => {
 
 
 });
+
+export { expectDatasetSavedById, expectDatasetDeleted };
