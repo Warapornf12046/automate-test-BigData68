@@ -38,3 +38,27 @@ export async function login(page: Page) {
     timeout: 15000,
   });
 }
+
+// export async function logout(page: Page) {
+//   await page.locator("button#showmenudetail").click();
+//   await page.locator("button#logout").click();
+//   await expect(page).toHaveURL(/.*login/);
+// }
+export async function logout(page: Page) {
+  // ถ้ามี SweetAlert ค้าง ให้ปิดก่อน
+  const swalConfirm = page.locator(".swal2-confirm").last();
+
+  if (await swalConfirm.isVisible().catch(() => false)) {
+    await swalConfirm.click().catch(() => { });
+    await page.waitForTimeout(1000);
+  }
+
+  await page.locator("button#showmenudetail").click();
+  await page.locator("button#logout").click();
+
+  await page.waitForLoadState("domcontentloaded").catch(() => { });
+
+  await expect(page).toHaveURL(/.*login/, {
+    timeout: 30000,
+  });
+}

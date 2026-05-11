@@ -1,6 +1,8 @@
 // tests/fixtures/manage-report.data.ts
 
 import { Page } from "@playwright/test";
+import { randomText } from "../../share/randomText";
+import { randomNumber } from "../../share/randomNumber";
 
 export const loginData = {
   username: "admin",
@@ -13,7 +15,10 @@ export const reportStep1Data = {
   subTitle: "ชุดข้อมูลร่วม",
   statusTitle: "เปิดใช้งาน",
   publishDateTitle: "2569-04-28",
-  reportNamePrefix: "รายงานทดสอบ",
+  // reportNamePrefix: `รายงานทดสอบ ${randomText(5)}`,
+
+  // edit
+  reportNamePrefix: "ระเบียน",
 };
 
 // input พื้นฐาน มีทุกเหมือนกันทุกประเภทข้อมูล
@@ -150,7 +155,7 @@ export const metadataTypeData = {
     code: "9",
     isOther: true,
     otherInputSelector: "#admin-report-custom-type-name",
-    otherValue: "ข้อมูลประเภทอื่น ๆ ทดสอบ",
+    otherValue: `ข้อมูลประเภทอื่น ๆ ทดสอบ ${randomText(4)}`,
   },
 } as const;
 
@@ -174,7 +179,7 @@ export const commonMetadataInputData = {
   // maintainer_email: Text 50 Characters
   contactEmail: {
     selector: "#admin-report-contact-email",
-    value: "slaborfs@nso.go.th",
+    value: `slaborfs${randomText(5)}@nso.go.th`,
     maxLength: 50,
     inputType: "email",
   },
@@ -212,7 +217,7 @@ export const commonMetadataInputData = {
     inputType: "string",
   },
 
-   
+
 } as const;
 
 export const accessConditionData = {
@@ -242,7 +247,7 @@ export const sponsorData = [
 
     // ใช้ input กลาง
     otherInputSelector: "#admin-report-sponsor-other-new",
-    otherValue: "ผู้สนับสนุนหรือผู้ร่วมดำเนินการอื่น ๆ ทดสอบ",
+    otherValue: `ผู้สนับสนุนหรือผู้ร่วมดำเนินการอื่น ๆ ทดสอบ ${randomText(4)}`,
 
   },
   {
@@ -272,7 +277,7 @@ export const smallestUnitData = {
   code: "99",
   isOther: true,
   otherInputSelector: "#admin-report-smallest-unit-other",
-  otherValue: "หน่วยที่ย่อยที่สุดของการจัดเก็บข้อมูลทดสอบ",
+  otherValue: `หน่วยที่ย่อยที่สุดของการจัดเก็บข้อมูลทดสอบ ${randomText(4)}`,
 } as const;
 
 export const languageData = [
@@ -292,7 +297,7 @@ export const languageData = [
     code: "99",
     isOther: true,
     otherInputSelector: "#admin-report-language-other-new",
-    otherValue: "ภาษาที่ใช้อื่น ๆ ทดสอบ",
+    otherValue: `ภาษาที่ใช้อื่น ๆ ทดสอบ ${randomText(4)}`,
   },
   {
     title: "ภาษาที่ใช้18",
@@ -315,7 +320,7 @@ export const organizationData = {
 } as const;
 
 export const objectiveData = [
-   {
+  {
     title: "อื่น ๆ",
     searchText: "อื่น ๆ",
     optionText: "อื่น ๆ",
@@ -325,7 +330,7 @@ export const objectiveData = [
 
     otherInputSelector: "#admin-report-objective-other-new",
     otherInputTestId: "admin-report-objective-other-new",
-    otherValue: "วัตถุประสงค์อื่น ๆ ทดสอบ",
+    otherValue: `วัตถุประสงค์อื่น ๆ ทดสอบ ${randomText(4)}`,
   },
   {
     title: "ดัชนี/ตัวชี้วัดระดับ นานาชาติ",
@@ -356,7 +361,7 @@ export const updateFrequencyUnitData = {
   code: "X",
   isOther: true,
   otherInputSelector: "#admin-report-freq-unit-other",
-  otherValue: "หน่วยความถี่ของการปรับปรุงข้อมูล ทดสอบ",
+  otherValue: `หน่วยความถี่ของการปรับปรุงข้อมูล ทดสอบ ${randomText(4)}`,
 } as const;
 
 export const geoCoverageData = {
@@ -368,7 +373,7 @@ export const geoCoverageData = {
   code: "99",
   isOther: true,
   otherInputSelector: "#admin-report-geo-scope-other",
-  otherValue: "ขอบเขตเชิงภูมิศาสตร์หรือเชิงพื้นที่ทดสอบ",
+  otherValue: `ขอบเขตเชิงภูมิศาสตร์หรือเชิงพื้นที่ทดสอบ ${randomText(4)}`,
 } as const;
 
 
@@ -389,7 +394,7 @@ export const dataFormatData = [
     code: "99",
     isOther: true,
     otherInputSelector: "#admin-report-format-other-new",
-    otherValue: "รูปแบบการเก็บข้อมูลอื่น ๆ ทดสอบ",
+    otherValue: `รูปแบบการเก็บข้อมูลอื่น ๆ ทดสอบ ${randomText(4)}`,
   },
 ] as const;
 
@@ -444,7 +449,7 @@ export const licenseData = {
   code: "99",
   isOther: true,
   otherInputSelector: "#admin-report-license-other",
-  otherValue: "รายละเอียดสัญญาอนุญาตให้ใช้ข้อมูล Others License",
+  otherValue: `รายละเอียดสัญญาอนุญาตให้ใช้ข้อมูล Others License ${randomText(4)}`,
 } as const;
 
 // ------------------------------
@@ -461,7 +466,7 @@ export const recordMetadataData = {
   // URL
   url: {
     selector: "#admin-report-url",
-    value: "https://www.nso.go.th/",
+    value: `https://www.nso.go.th/ ${randomText(5)}`,
     // maxLength: 500,
     inputType: "url",
   },
@@ -469,11 +474,15 @@ export const recordMetadataData = {
   // ผู้สนับสนุนหรือผู้ร่วมดำเนินการ
   sponsor: {
     selector: "#admin-report-sponsor",
+    value: `ผู้สนับสนุนหรือผู้ร่วมดำเนินการ ${randomText(5)}`,
+    maxLength: 200,
+    inputType: "string",
   },
 
   // หน่วยที่ย่อยที่สุดของการจัดเก็บข้อมูล
   smallestUnit: {
     selector: "#admin-report-smallest-unit",
+
   },
 
   // ภาษาที่ใช้
@@ -563,8 +572,8 @@ export const statisticMetadataData = {
       value: "313",
       code: "99",
       isOther: true,
-      otherInputSelector: "#admin-report-classification-other",
-      otherValue: "การจัดจำแนกอื่น ๆ ทดสอบ",
+      otherInputSelector: "#admin-report-classification-other-new",
+      otherValue: `การจัดจำแนกอื่น ๆ ทดสอบ ${randomText(4)}`,
     },
     {
       title: "เพศ",
@@ -592,7 +601,7 @@ export const statisticMetadataData = {
     code: "99",
     isOther: true,
     otherInputSelector: "#admin-report-multiplier-unit-other",
-    otherValue: "หน่วยตัวคูณอื่น ๆ ทดสอบ",
+    otherValue: `หน่วยตัวคูณอื่น ๆ ทดสอบ ${randomText(4)}`,
   },
 
   calculationMethod: {
@@ -715,7 +724,7 @@ export const geoSpatialMetadataData = {
       code: "99",
       isOther: true,
       otherInputSelector: "#admin-report-map-scale-other",
-      otherValue: "มาตราส่วนอื่น ๆ ทดสอบ",
+      otherValue: `มาตราส่วนอื่น ๆ ทดสอบ ${randomText(4)}`,
     },
     {
       title: "1:50,000",
@@ -775,7 +784,7 @@ export const positionalAccuracyData = {
     code: "Y",
     isOther: true,
     otherInputSelector: "#admin-report-positional-accuracy-detail",
-    otherValue: "มี ควบคุมความถูกต้องด้วย RMSEH ตามมาตรฐาน FGDS",
+    otherValue: `มี ควบคุมความถูกต้องด้วย RMSEH ตามมาตรฐาน FGDS ${randomText(4)}`,
   },
 
   none: {
@@ -790,222 +799,10 @@ export const positionalAccuracyData = {
 } as const;
 
 
-
-// -----------------------------------------------------
-// ประเภทข้อมูล = 1 select
-// export const typeData = {
-//   selector: "#admin-report-type",
-//   title: "ข้อมูลระเบียน",
-//   searchText: "ข้อมูลระเบียน",
-//   optionText: "ข้อมูลระเบียน",
-//   value: "3",
-//   code: "3",
-//   isOther: false,
-// };
-
-// // องค์กร = 1 select
-// export const organizationData = {
-//   selector: "#admin-report-org",
-//   title: "สำนักนายกรัฐมนตรี",
-//   searchText: "สำนักนายกรัฐมนตรี",
-//   optionText: "สำนักนายกรัฐมนตรี",
-//   value: "0101",
-//   code: "0101",
-//   isOther: false,
-// };
-
-// // วัตถุประสงค์ > 1 select + input other + detail
-// export const objectiveData = [
-//   {
-//     title: "อื่น ๆ",
-//     searchText: "อื่นๆ",
-//     optionText: "อื่น ๆ",
-//     value: "41",
-//     code: "99",
-//     isOther: true,
-//     otherValue: "วัตถุประสงค์อื่น ๆ ทดสอบ",
-//     detail: "คำอธิบายวัตถุประสงค์ 1: อื่น ๆ",
-//   },
-//   {
-//     title: "ดัชนี/ตัวชี้วัดระดับ นานาชาติ",
-//     searchText: "ดัชนี",
-//     optionText: "ดัชนี/ตัวชี้วัดระดับ นานาชาติ",
-//     value: "39",
-//     code: "12",
-//     isOther: false,
-//     detail: "คำอธิบายวัตถุประสงค์ 2: ดัชนี/ตัวชี้วัดระดับ นานาชาติ",
-//   },
-//   {
-//     title: "ไม่ทราบ",
-//     searchText: "ไม่ทราบ",
-//     optionText: "ไม่ทราบ",
-//     value: "40",
-//     code: "98",
-//     isOther: false,
-//     detail: "คำอธิบายวัตถุประสงค์ 3: ไม่ทราบ",
-//   },
-// ];
-
-// // หน่วยความถี่ของการปรับปรุงข้อมูล = 1 select + input other
-// export const update_frequency_unitData = {
-//   title: "อื่น ๆ ระบุ...",
-//   searchText: "อื่น ๆ ระบุ...",
-//   optionText: "อื่น ๆ ระบุ...",
-//   value: "53",
-//   code: "X",
-//   isOther: true,
-//   otherInputSelector: "#admin-report-freq-unit-other",
-//   otherValue: "หน่วยความถี่ของการปรับปรุงข้อมูล ทดสอบ",
-// };
-
-// // ขอบเขตเชิงภูมิศาสตร์หรือเชิงพื้นที่ = 1 select + input other
-// export const geo_coverageData = {
-//   title: "อื่น ๆ ระบุ...",
-//   searchText: "อื่น ๆ ระบุ...",
-//   optionText: "อื่น ๆ ระบุ...",
-//   value: "67",
-//   code: "99",
-//   isOther: true,
-//   otherInputSelector: "#admin-report-geo-scope-other",
-//   otherValue: "ขอบเขตเชิงภูมิศาสตร์หรือเชิงพื้นที่ทดสอบ",
-// };
-
-// // รูปแบบการเก็บข้อมูล > 1 select + input other
-// export const data_formatData = [
-//   {
-//     title: "อื่น ๆ ระบุ .....",
-//     searchText: "อื่น ๆ ระบุ .....",
-//     optionText: "อื่น ๆ ระบุ .....",
-//     value: "84",
-//     code: "99",
-//     isOther: true,
-//     otherInputSelector: "#admin-report-format-other",
-//     otherValue: "รูปแบบการเก็บข้อมูลอื่น ๆ",
-//   },
-//   {
-//     title: "CSV",
-//     searchText: "CSV",
-//     optionText: "CSV",
-//     value: "70",
-//     code: "2",
-//     isOther: false,
-//   },
-// ];
-
-// // ภาษาที่ใช้ > 1 select + input other
-// export const languageData = [
-//   {
-//     title: "ไทย",
-//     searchText: "ไทย",
-//     optionText: "ไทย",
-//     value: "144",
-//     code: "01",
-//     isOther: false,
-//   },
-//   {
-//     title: "อื่น ๆ ระบุ .........",
-//     searchText: "อื่น ๆ ระบุ .........",
-//     optionText: "อื่น ๆ ระบุ .........",
-//     value: "157",
-//     code: "99",
-//     isOther: true,
-//     otherInputSelector: "#admin-report-language-other",
-//     otherValue: "ภาษาที่ใช้อื่น ๆ ทดสอบ",
-//   },
-
-// ];
-
-
-// // หมวดหมู่ข้อมูลตามธรรมาภิบาลข้อมูลภาครัฐ = 1 select
-// export const data_governanceData = {
-//   title: "ข้อมูลสาธารณะ",
-//   searchText: "ข้อมูลสาธารณะ",
-//   optionText: "ข้อมูลสาธารณะ",
-//   value: "85",
-//   code: "1",
-//   isOther: false,
-// };
-
-// // สัญญาอนุญาตให้ใช้ข้อมูล = 1 select + input other
-// export const licenseData = {
-//   title: "Others License",
-//   searchText: "Others License",
-//   optionText: "Others License",
-//   value: "95",
-//   code: "99",
-//   isOther: true,
-//   otherInputSelector: "#admin-report-license-other",
-//   otherValue: "รายละเอียดสัญญาอนุญาตให้ใช้ข้อมูล Others License",
-// };
-
-// // ผู้สนับสนุนหรือผู้ร่วมดำเนินการ > 1 select + input other + detail
-// export const sponsorData = [
-//   {
-//     title: "อื่น ๆ",
-//     searchText: "อื่น ๆ",
-//     optionText: "อื่น ๆ",
-//     value: "130",
-//     code: "9",
-//     isOther: true,
-//     otherValue: "ผู้สนับสนุนหรือผู้ร่วมดำเนินการอื่น ๆ ทดสอบ",
-//     detail: "คำอธิบายผู้สนับสนุนหรือผู้ร่วมดำเนินการ 1: อื่น ๆ",
-//   },
-//   {
-//     title: "หน่วยงานของรัฐ",
-//     searchText: "หน่วยงานของรัฐ",
-//     optionText: "หน่วยงานของรัฐ",
-//     value: "125",
-//     code: "1",
-//     isOther: false,
-//     detail: "คำอธิบายผู้สนับสนุนหรือผู้ร่วมดำเนินการ 2: หน่วยงานของรัฐ",
-//   },
-// ];
-
-// // หน่วยที่ย่อยที่สุดของการจัดเก็บข้อมูล = 1 select + input other
-// export const smallest_unitData = {
-//   title: "อื่น ๆ ระบุ .........",
-//   searchText: "อื่น ๆ ระบุ .........",
-//   optionText: "อื่น ๆ ระบุ .........",
-//   value: "143",
-//   code: "99",
-//   isOther: true,
-//   otherInputSelector: "#admin-report-smallest-unit-other",
-//   otherValue: "หน่วยที่ย่อยที่สุดของการจัดเก็บข้อมูลทดสอบ99",
-// };
-
-
-
-
-
-
-
-
-
-// export const dictionaryRows = [
-//   {
-//     columnName: "PERSON_ID",
-//     dataType: "VARCHAR2",
-//     sizeValue: "13",
-//     required: true,
-//     description: "เลขประจำตัวประชาชน",
-//     sampleData: "1101700200000",
-//   },
-//   {
-//     columnName: "PERSON_NAME",
-//     dataType: "VARCHAR2",
-//     sizeValue: "255",
-//     required: true,
-
-//     description: "ชื่อ-นามสกุล",
-//     sampleData: "นายทดสอบ ระบบ",
-//   },
-// ];
-
-
 export const dictionaryRows: DictionaryRowTestData[] = [
   {
     columnName: {
-      value: "PERSON_ID",
+      value: `PERSON_ID ${randomText(4)}`,
       inputType: "string",
       maxLength: 100,
     },
@@ -1017,7 +814,7 @@ export const dictionaryRows: DictionaryRowTestData[] = [
       code: "",
     },
     sizeValue: {
-      value: "13",
+      value: `${randomNumber(3)}`,
       inputType: "number",
       maxLength: 10,
     },
@@ -1047,7 +844,8 @@ export const dictionaryRows: DictionaryRowTestData[] = [
       code: "",
     },
     sizeValue: {
-      value: "255",
+      value: `${randomNumber(3)}`,
+
       inputType: "number",
       maxLength: 10,
     },
@@ -1066,7 +864,7 @@ export const dictionaryRows: DictionaryRowTestData[] = [
 ];
 
 export const metadataValidationCases = [
-    
+
   {
     key: "record",
     name: "ข้อมูลระเบียน",
@@ -1078,7 +876,6 @@ export const metadataValidationCases = [
       "กรุณากรอกรายละเอียด",
       "กรุณาเลือกวัตถุประสงค์",
       "กรุณาเลือกหน่วยความถี่ของการปรับปรุงข้อมูล",
-      "กรุณากรอกหน่วยความถี่ของการปรับปรุงข้อมูลอื่นๆ",
       "กรุณาเลือกรูปแบบการเก็บข้อมูล",
       "กรุณาเลือกหมวดหมู่ข้อมูลตามธรรมาภิบาลข้อมูลภาครัฐ",
       "กรุณาเลือกสัญญาอนุญาตให้ใช้ข้อมูล",
@@ -1096,7 +893,7 @@ export const metadataValidationCases = [
       "กรุณากรอกรายละเอียด",
       "กรุณาเลือกวัตถุประสงค์",
       "กรุณาเลือกหน่วยความถี่ของการปรับปรุงข้อมูล",
-      "กรุณากรอกหน่วยความถี่ของการปรับปรุงข้อมูลอื่นๆ",
+      // "กรุณากรอกหน่วยความถี่ของการปรับปรุงข้อมูลอื่นๆ",
       "กรุณาเลือกรูปแบบการเก็บข้อมูล",
       "กรุณาเลือกหมวดหมู่ข้อมูลตามธรรมาภิบาลข้อมูลภาครัฐ",
       "กรุณาเลือกสัญญาอนุญาตให้ใช้ข้อมูล",
@@ -1118,8 +915,8 @@ export const metadataValidationCases = [
       "กรุณากรอกรายละเอียด",
       "กรุณาเลือกวัตถุประสงค์",
       "กรุณาเลือกหน่วยความถี่ของการปรับปรุงข้อมูล",
-      "กรุณากรอกหน่วยความถี่ของการปรับปรุงข้อมูลอื่นๆ",
-      
+      // "กรุณากรอกหน่วยความถี่ของการปรับปรุงข้อมูลอื่นๆ",
+
       "กรุณาเลือกรูปแบบการเก็บข้อมูล",
       "กรุณาเลือกหมวดหมู่ข้อมูลตามธรรมาภิบาลข้อมูลภาครัฐ",
       "กรุณาเลือกสัญญาอนุญาตให้ใช้ข้อมูล",
@@ -1141,7 +938,7 @@ export const metadataValidationCases = [
       "กรุณากรอกรายละเอียด",
       "กรุณาเลือกวัตถุประสงค์",
       "กรุณาเลือกหน่วยความถี่ของการปรับปรุงข้อมูล",
-      "กรุณากรอกหน่วยความถี่ของการปรับปรุงข้อมูลอื่นๆ",
+      // "กรุณากรอกหน่วยความถี่ของการปรับปรุงข้อมูลอื่นๆ",
 
       "กรุณาเลือกรูปแบบการเก็บข้อมูล",
       "กรุณาเลือกหมวดหมู่ข้อมูลตามธรรมาภิบาลข้อมูลภาครัฐ",
@@ -1266,6 +1063,7 @@ export const additionalDictionaryRows: DictionaryRowTestData[] = [
       optionText: "NUMBER",
       code: "3",
     },
+
     sizeValue: { value: "10", inputType: "number", maxLength: 10 },
     required: false,
     description: { value: "คอลัมน์ใหม่ 1", inputType: "string", maxLength: 500 },
@@ -1298,3 +1096,5 @@ export async function clearBrowserState(page: Page) {
     sessionStorage.clear();
   });
 }
+
+
