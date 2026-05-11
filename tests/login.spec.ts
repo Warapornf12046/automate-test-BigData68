@@ -11,18 +11,7 @@ test("login test", async ({ page }) => {
 
 //ระบบ login/logout Bigdata68 ประชาชนทั่วไป/หน่วยงานภายนอก
 async function login(page: Page) {
-  await page.goto("/login");
-
-  await expect(page).toHaveTitle(
-    /โครงการพัฒนาฐานข้อมูลแรงงานอัจฉริยะและบูรณาการข้อมูลด้านแรงงาน/,
-  );
-  //ใส่ Username password
-  await page.locator("#username").fill("jijee");
-  await page.locator("#password").fill("Test1234#");
-
-  await page.keyboard.press("Enter");
-
-  await expect(page).toHaveURL(/.*main/);
+  login(page);
 
   //logout
   await page.locator("button#showmenudetail").click();
@@ -33,18 +22,8 @@ async function login(page: Page) {
 
 //ทดสอบระบบ login/logout Big data68 หน่วยงานภายใน
 async function loginLDAP(page: Page) {
-  await page.goto("/login");
+   login(page);
 
-  await expect(page).toHaveTitle(
-    /โครงการพัฒนาฐานข้อมูลแรงงานอัจฉริยะและบูรณาการข้อมูลด้านแรงงาน/,
-  );
-
-  //ใส่ Username password
-  await page.locator("button#loginLDAP").click();
-  await page.locator("#username").fill("admin");
-  await page.locator("#password").fill("password123");
-
-  await page.keyboard.press("Enter");
 
   await expect(page).toHaveURL(/.*main/);
 

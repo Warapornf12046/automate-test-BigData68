@@ -5,9 +5,17 @@ import { createRandomUploadFile } from "../share/fileRandom";
 import { login } from "../share/login.spec";
 
 test("document test", async ({ page }) => {
-  await adddata(page);
-  await updatedata(page);
-  await deletedata(page);
+  await test.step("เพิ่มข้อมูล", async () => {
+    await adddata(page);
+  });
+
+  await test.step("แก้ไขข้อมูล", async () => {
+    await updatedata(page);
+  });
+
+  await test.step("ลบข้อมูล", async () => {
+    await deletedata(page);
+  });
 });
 
 //createdocpub
@@ -184,8 +192,6 @@ async function deletedata(page: Page) {
   // popup success
   await expect(page.locator(".swal2-popup")).toBeVisible({ timeout: 10000 });
   await expect(page.locator(".swal2-title")).toContainText("ลบข้อมูลเสร็จสิ้น");
-
- 
 
   // เช็คว่าชื่อที่ลบหายไปจาก table แล้ว
   await expect(page.locator(".ant-table-tbody")).not.toContainText(

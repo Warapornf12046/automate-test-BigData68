@@ -7,39 +7,30 @@ export async function login(page: Page) {
   });
 
   const ldapButton = page.locator('button[data-login-type="LDAP"]');
+  const username = page.locator("#username");
+  const password = page.locator("#password");
 
-  const result = await Promise.race([
-    page
-      .waitForURL(/.*\/main|.*\/manage\/document|.*\/login\/sso-finish.*/, {
-        timeout: 10000,
-      })
-      .then(() => "alreadyLoggedIn" as const),
+  const hasLdapButton = await ldapButton
+    .waitFor({ state: "visible", timeout: 5000 })
+    .then(() => true)
+    .catch(() => false);
 
-    ldapButton
-      .waitFor({ state: "visible", timeout: 10000 })
-      .then(() => "loginPageReady" as const),
-  ]).catch(() => "notFound" as const);
+  if (hasLdapButton) {
+    await ldapButton.click();
+  }
 
-  if (result === "alreadyLoggedIn") {
-    if (page.url().includes("/login/sso-finish")) {
-      await page.waitForURL(/.*\/main|.*\/manage\/document/, {
-        timeout: 15000,
-      });
-    }
+  const hasUsername = await username
+    .waitFor({ state: "visible", timeout: 5000 })
+    .then(() => true)
+    .catch(() => false);
 
+  if (!hasUsername) {
+    console.log("Skip username fill: already logged in");
     return;
   }
 
-  if (result === "notFound") {
-    throw new Error(
-      `ไม่พบปุ่ม LDAP และยังไม่ login, current URL: ${page.url()}`,
-    );
-  }
-
-  await ldapButton.click();
-
-  await page.locator("#username").fill("admin");
-  await page.locator("#password").fill("password123");
+  await username.fill("admin");
+  await password.fill("password123");
 
   await page.locator('button[type="submit"]').click();
 
