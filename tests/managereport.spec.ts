@@ -926,56 +926,56 @@ export function getMetadataInputFields(): InputFieldTestData[] {
   ];
 }
 
-export async function mLogin(page: Page) {
-  await page.goto("/login");
-
-  await expect(page.getByRole("heading", { name: "ยินดีต้อนรับ" })).toBeVisible({
-    timeout: 10000,
-  });
-
-  const ldapButton = page.locator('button[data-login-type="LDAP"]');
-  const internalTab = page.getByRole("tab", { name: "หน่วยงานภายใน" });
-
-  if (await ldapButton.isVisible().catch(() => false)) {
-    await ldapButton.click();
-  } else if (await internalTab.isVisible().catch(() => false)) {
-    await internalTab.click();
-  }
-
-  await page.locator("#username").fill(loginData.username);
-  await page.locator("#password").fill(loginData.password);
-
-  const loginButton = page.getByRole("button", { name: "เข้าสู่ระบบ" });
-
-  if (await loginButton.isVisible().catch(() => false)) {
-    await loginButton.click();
-  } else {
-    await page.keyboard.press("Enter");
-  }
-
-  await expect(page).toHaveURL(/.*main/, { timeout: 30000 });
-
-  await page.goto("/manage/admin-report");
-
-  await expect(page).toHaveURL(/.*manage\/admin-report/, {
-    timeout: 30000,
-  });
-}
 // export async function mLogin(page: Page) {
-//   await login(page);
+//   await page.goto("/login");
 
-//   await page.goto("/manage/admin-report", {
-//     waitUntil: "domcontentloaded",
+//   await expect(page.getByRole("heading", { name: "ยินดีต้อนรับ" })).toBeVisible({
+//     timeout: 10000,
 //   });
+
+//   const ldapButton = page.locator('button[data-login-type="LDAP"]');
+//   const internalTab = page.getByRole("tab", { name: "หน่วยงานภายใน" });
+
+//   if (await ldapButton.isVisible().catch(() => false)) {
+//     await ldapButton.click();
+//   } else if (await internalTab.isVisible().catch(() => false)) {
+//     await internalTab.click();
+//   }
+
+//   await page.locator("#username").fill(loginData.username);
+//   await page.locator("#password").fill(loginData.password);
+
+//   const loginButton = page.getByRole("button", { name: "เข้าสู่ระบบ" });
+
+//   if (await loginButton.isVisible().catch(() => false)) {
+//     await loginButton.click();
+//   } else {
+//     await page.keyboard.press("Enter");
+//   }
+
+//   await expect(page).toHaveURL(/.*main/, { timeout: 30000 });
+
+//   await page.goto("/manage/admin-report");
 
 //   await expect(page).toHaveURL(/.*manage\/admin-report/, {
 //     timeout: 30000,
 //   });
-
-//   // await expect(page.locator("body")).not.toContainText("401", {
-//   //   timeout: 5000,
-//   // });
 // }
+export async function mLogin(page: Page) {
+  await login(page);
+
+  await page.goto("/manage/admin-report", {
+    waitUntil: "domcontentloaded",
+  });
+
+  // await expect(page).toHaveURL(/.*manage\/admin-report/, {
+  //   timeout: 30000,
+  // });
+
+  // await expect(page.locator("body")).not.toContainText("401", {
+  //   timeout: 5000,
+  // });
+}
 
 // export async function waitForAuthReady(page: Page) {
 //   await page.waitForLoadState("networkidle").catch(() => {});
