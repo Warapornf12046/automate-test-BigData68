@@ -88,7 +88,8 @@ async function adddata(page: Page) {
 
 //updatedata
 async function updatedata(page: Page) {
-  login(page);
+  // login(page);
+  await page.goto("/main");
 
   //ไปที่menu จัดการข้อมูลและ เข้าหน้าจัดการรายงาน
   await page.locator("button#จัดการข้อมูล-5").click();
@@ -157,7 +158,8 @@ async function updatedata(page: Page) {
 
 //deletedata
 async function deletedata(page: Page) {
-  login(page);
+  // login(page);
+  await page.goto("/main");
 
   //ไปที่menu จัดการข้อมูลและ เข้าหน้าจัดการรายงาน
   await page.locator("button#จัดการข้อมูล-5").click();

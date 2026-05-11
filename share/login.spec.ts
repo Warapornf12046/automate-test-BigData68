@@ -20,7 +20,7 @@ export async function login(page: Page) {
   }
 
   const hasUsername = await username
-    .waitFor({ state: "visible", timeout: 5000 })
+    .waitFor({ state: "visible", timeout: 10000 })
     .then(() => true)
     .catch(() => false);
 

@@ -29,12 +29,15 @@ export default defineConfig({
   // workers: 1,
 
   /* Reporter to use. See https://playwright.dev/docs/test-reporters */
-  reporter: [["html", { open: "on-failure" }], ["list"]],
+  reporter: [
+    ["html", { outputFolder: "playwright-report", open: "on-failure" }],
+    ["list"],
+  ],
   /* Shared settings for all the projects below. See https://playwright.dev/docs/api/class-testoptions. */
   use: {
     baseURL: process.env.APP_URL || "http://localhost:3000",
     // launchOptions: {
-    //   slowMo: 300,
+    //   slowMo: 1000,
     //   // หน่วงทุก action 2 วินาที
     // },
 
