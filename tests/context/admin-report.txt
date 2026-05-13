@@ -1604,7 +1604,13 @@ export default function ManageReportPage() {
     const normalizedLabel = normalizeText(label)?.replace(/\s+/g, "") ?? "";
     const lowerLabel = normalizedLabel.toLowerCase();
 
-    return normalizedLabel === "อื่นๆ" || lowerLabel === "other" || lowerLabel === "others";
+    return (
+      normalizedLabel === "อื่นๆ" ||
+      lowerLabel === "other" ||
+      lowerLabel === "others" ||
+      normalizedLabel.includes("อื่นๆ") ||
+      lowerLabel.includes("other")
+    );
   };
 
   const getPrimaryOtherOption = (metadataId: number) => {

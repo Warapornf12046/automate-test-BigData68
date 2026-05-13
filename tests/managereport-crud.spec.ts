@@ -36,22 +36,25 @@ import {
   goToDataDictionaryStep,
   updateDictionaryForEdit,
   saveReport,
-  expectDatasetSavedById,
   snapshotToText,
   expectViewValuesForType,
-  expectDatasetDeleted,
   closeAntdDropdown,
   fillDictionaryRow,
   buildScenarioValues,
   fillGovernanceOnly,
+  mLogin,
 } from "./managereport.spec";
-import { expectLatestDatasetSaved, expectMetadataFieldValue, expectCustomMetadataCreated, getDatasetSnapshotById } from "./helpers/oracle-db";
+import { logout } from "../share/login.spec";
+import { expectLatestDatasetSaved, expectMetadataFieldValue, expectCustomMetadataCreated, getDatasetSnapshotById, expectDatasetSavedById, expectDatasetDeleted } from "./helpers/oracle-db";
 import { dataGovernanceData } from "./fixtures/manage-report.data";
 
 test.describe("Admin Report CRUD Scenarios", () => {
   test.beforeEach(async ({ page }) => {
-    // Navigate to admin report or run common setup if needed
-    // mReportPart1 normally handles login and initial setup
+    await mLogin(page);
+  });
+
+  test.afterEach(async ({ page }) => {
+    await logout(page);
   });
 
   // ==============================================================================

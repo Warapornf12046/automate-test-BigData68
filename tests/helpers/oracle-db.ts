@@ -175,41 +175,60 @@ export async function expectMetadataFieldValue(
       SELECT *
       FROM TB_DATASET_GROUPS_METAD
       WHERE DATASET_GROUPS_ID = :datasetGroupId
-        AND METADATA_ID = :metadataId
       `,
-      { datasetGroupId, metadataId },
+      { datasetGroupId },
       { outFormat: oracledb.OUT_FORMAT_OBJECT },
     );
 
     const rows = result.rows as any[];
-    
+
     if (expectedValue === null) {
       if (rows && rows.length > 0) {
-        throw new Error(
-          `คาดหวังว่า METADATA_ID ${metadataId} จะไม่มีค่า (null) แต่พบข้อมูล ${rows.length} แถว`,
-        );
+        // Filter rows that might match this metadataId using METADATA_REF_ID or METADATA_ID
+        const filteredRows = rows.filter(row => {
+          const rowId = row.METADATA_REF_ID ?? row.METADATA_ID ?? row.MS_METADATA_ID;
+          return String(rowId) === String(metadataId);
+        });
+        if (filteredRows.length > 0) {
+          throw new Error(
+            `คาดหวังว่า Metadata ID ${metadataId} จะไม่มีค่า (null) แต่พบข้อมูล ${filteredRows.length} แถว`,
+          );
+        }
       }
       return;
     }
 
     if (!rows || rows.length === 0) {
       throw new Error(
-        `ไม่พบข้อมูลใน TB_DATASET_GROUPS_METAD สำหรับ METADATA_ID ${metadataId}`,
+        `ไม่พบข้อมูลใดๆ ใน TB_DATASET_GROUPS_METAD สำหรับ DATASET_GROUPS_ID ${datasetGroupId}`,
       );
     }
 
     // Check if the expected value exists among the rows
     const match = rows.find((row) => {
-      const valueMatch = row.METADATA_VALUE === expectedValue;
+      // Use METADATA_REF_ID as primary column for category ID (from user's JSON)
+      const rowMetadataId = row.METADATA_REF_ID ?? row.METADATA_ID ?? row.MS_METADATA_ID;
+      const idMatch = String(rowMetadataId) === String(metadataId);
+      if (!idMatch) return false;
+
+      const valueMatch = String(row.METADATA_VALUE) === String(expectedValue);
       if (expectedOtherValue !== undefined && expectedOtherValue !== null) {
-        return valueMatch && row.OTHER_VALUE === expectedOtherValue;
+        // Check for OTHER_VALUE or similar column if it exists
+        const otherVal = row.OTHER_VALUE ?? row.METADATA_OTHER_VALUE;
+        return valueMatch && String(otherVal) === String(expectedOtherValue);
       }
       return valueMatch;
     });
 
     if (!match) {
+      const availableCols = Object.keys(rows[0]).join(", ");
+      const relevantRows = rows.filter(r => String(r.METADATA_REF_ID ?? r.METADATA_ID ?? r.MS_METADATA_ID) === String(metadataId));
+
       throw new Error(
-        `ค่า METADATA_ID ${metadataId} ไม่ตรงตามคาดหวัง\nคาดหวัง: ${expectedValue} (other: ${expectedOtherValue})\nพบจริง: ${JSON.stringify(rows.map((r) => ({ value: r.METADATA_VALUE, other: r.OTHER_VALUE })))}`,
+        `ค่าสำหรับ Metadata ID ${metadataId} ไม่ตรงตามคาดหวัง\n` +
+        `คาดหวัง: ${expectedValue} (other: ${expectedOtherValue})\n` +
+        `พบใน DB (เฉพาะ ID ที่ตรง): ${JSON.stringify(relevantRows.map((r) => ({ value: r.METADATA_VALUE, other: r.OTHER_VALUE ?? r.METADATA_OTHER_VALUE })))}\n` +
+        `คอลัมน์ที่มีในตาราง: ${availableCols}`
       );
     }
 
@@ -279,7 +298,7 @@ export async function expectOtherMetadataExists(
       );
     }
 
-    console.log(`  ✓ พบข้อมูล "อื่น ๆ" ใน MS_METADATA_LIST: ${result.rows.length} row(s)`);
+    // console.log(`  ✓ พบข้อมูล "อื่น ๆ" ใน MS_METADATA_LIST: ${result.rows.length} row(s)`);
     return result.rows;
   } finally {
     await connection.close();
@@ -292,7 +311,7 @@ export async function expectOtherMetadataExistsByMetadataId(
   metadataName: string,
 ) {
   const code = getOtherMetadataCode(metadataId);
-  
+
   if (!code) {
     throw new Error(
       `ไม่พบ CODE สำหรับ METADATA_ID ${metadataId} ใน OTHER_METADATA_CODES mapping`,
@@ -326,10 +345,10 @@ export async function expectLatestOtherMetadataCreated(code: string = "X") {
       return [];
     }
 
-    console.log(`  ✓ พบข้อมูล "อื่น ๆ" ที่สร้างล่าสุด: ${result.rows.length} row(s)`);
-    result.rows.forEach((row: any) => {
-      console.log(`    - ${row.METADATA_LIST_NAME} (ID: ${row.METADATA_LIST_ID})`);
-    });
+    // console.log(`  ✓ พบข้อมูล "อื่น ๆ" ที่สร้างล่าสุด: ${result.rows.length} row(s)`);
+    // result.rows.forEach((row: any) => {
+    //   console.log(`    - ${row.METADATA_LIST_NAME} (ID: ${row.METADATA_LIST_ID})`);
+    // });
 
     return result.rows;
   } finally {
@@ -366,10 +385,10 @@ export async function expectAllLatestOtherMetadataCreated() {
       return [];
     }
 
-    console.log(`  ✓ พบข้อมูล "อื่น ๆ" ที่สร้างล่าสุด: ${result.rows.length} row(s)`);
-    result.rows.forEach((row: any) => {
-      console.log(`    - [${row.METADATA_LIST_CODE}] ${row.METADATA_LIST_NAME} (ID: ${row.METADATA_LIST_ID})`);
-    });
+    // console.log(`  ✓ พบข้อมูล "อื่น ๆ" ที่สร้างล่าสุด: ${result.rows.length} row(s)`);
+    // result.rows.forEach((row: any) => {
+    //   console.log(`    - [${row.METADATA_LIST_CODE}] ${row.METADATA_LIST_NAME} (ID: ${row.METADATA_LIST_ID})`);
+    // });
 
     return result.rows;
   } finally {
@@ -400,7 +419,7 @@ export async function expectCustomMetadataCreated(
   latestRecords: number = 5,
 ) {
   const code = getOtherMetadataCode(metadataId);
-  
+
   if (!code) {
     throw new Error(
       `ไม่พบ CODE สำหรับ METADATA_ID ${metadataId} ใน OTHER_METADATA_CODES mapping`,
@@ -440,12 +459,12 @@ export async function expectCustomMetadataCreated(
       );
     }
 
-    console.log(
-      `  ✓ พบข้อมูล "อื่น ๆ" [METADATA_ID=${metadataId}, CODE=${code}]: ${result.rows.length} row(s)`,
-    );
-    result.rows.forEach((row: any) => {
-      console.log(`    - ${row.METADATA_LIST_NAME} (ID: ${row.METADATA_LIST_ID})`);
-    });
+    // console.log(
+    //   `  ✓ พบข้อมูล "อื่น ๆ" [METADATA_ID=${metadataId}, CODE=${code}]: ${result.rows.length} row(s)`,
+    // );
+    // result.rows.forEach((row: any) => {
+    //   console.log(`    - ${row.METADATA_LIST_NAME} (ID: ${row.METADATA_LIST_ID})`);
+    // });
 
     return result.rows;
   } finally {
