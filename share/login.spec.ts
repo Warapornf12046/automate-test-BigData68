@@ -10,24 +10,7 @@ export async function login(page: Page) {
   const username = page.locator("#username");
   const password = page.locator("#password");
 
-  const hasLdapButton = await ldapButton
-    .waitFor({ state: "visible", timeout: 5000 })
-    .then(() => true)
-    .catch(() => false);
-
-  if (hasLdapButton) {
-    await ldapButton.click();
-  }
-
-  const hasUsername = await username
-    .waitFor({ state: "visible", timeout: 10000 })
-    .then(() => true)
-    .catch(() => false);
-
-  if (!hasUsername) {
-    console.log("Skip username fill: already logged in");
-    return;
-  }
+  await ldapButton.click();
 
   await username.fill("admin");
   await password.fill("password123");
