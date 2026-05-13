@@ -1,0 +1,686 @@
+"use client";
+
+import DataTable from "@/app/components/share/Table";
+import type { ColumnsType } from "antd/es/table";
+import Link from "next/link";
+import { EditOutlined } from "@ant-design/icons";
+import { useCallback, useEffect, useMemo, useState } from "react";
+import Swal from "sweetalert2";
+import StatusButton from "@/app/components/share/StatusButton";
+import { Breadcrumb, Button, Form, Input, Select, Space, Tag } from "antd";
+import { usePermissions } from "@/app/components/share/PermissionsContext";
+import Swalhandle from "../../../components/share/Swalhandle";
+
+type TicketStatus = "Y" | "N";
+type DatasetEntityType = "reportDataGroup" | "reportGroup" | "reportDataset";
+
+type ApiReportDataGroupItem = {
+  id: number;
+  reportDataGroupCode: string;
+  reportDataGroupName: string;
+  reportDataGroupStatus: TicketStatus;
+};
+
+type ApiReportGroupItem = {
+  id: number;
+  reportGroupCode: string;
+  reportGroupName: string;
+  reportGroupStatus: TicketStatus;
+};
+
+type ApiReportDatasetItem = {
+  id: number;
+  reportDatasetCode: string;
+  reportDatasetName: string;
+  reportDatasetStatus: TicketStatus;
+};
+
+type ApiGroupDatasetTableData = {
+  reportDataGroups: ApiReportDataGroupItem[];
+  reportGroups: ApiReportGroupItem[];
+  reportDatasets: ApiReportDatasetItem[];
+};
+
+type ApiGroupDatasetTableResponse = {
+  status: number;
+  message: string;
+  dataenum: ApiGroupDatasetTableData;
+};
+
+type DatasetRecord = {
+  rowKey: string;
+  entityType: DatasetEntityType;
+  entityId: number;
+  code: string;
+  name: string;
+  status: TicketStatus;
+};
+
+type DatasetFormValues = {
+  selectedName: string;
+  customName?: string;
+  editName?: string;
+};
+
+const EMPTY_MASTER_DATA: ApiGroupDatasetTableData = {
+  reportDataGroups: [],
+  reportGroups: [],
+  reportDatasets: [],
+};
+
+const OTHER_OPTION_VALUE = "__other__";
+
+const ENTITY_TYPE_OPTIONS: { value: DatasetEntityType; label: string }[] = [
+  { value: "reportDataGroup", label: "ชื่อกลุ่มข้อมูลรายงาน" },
+  { value: "reportGroup", label: "ชื่อกลุ่มรายงาน" },
+  { value: "reportDataset", label: "ชื่อชุดข้อมูลรายงาน" },
+];
+
+const STATUS_FILTER_OPTIONS = [
+  { value: "ALL", label: "ทั้งหมด" },
+  { value: "Y", label: "ใช้งาน" },
+  { value: "N", label: "ปิดการใช้งาน" },
+] satisfies { value: "ALL" | TicketStatus; label: string }[];
+
+const getEntityLabel = (entityType: DatasetEntityType) => {
+  return (
+    ENTITY_TYPE_OPTIONS.find((item) => item.value === entityType)?.label ??
+    "ข้อมูล"
+  );
+};
+
+const getSaveEndpoint = (entityType: DatasetEntityType) => {
+  switch (entityType) {
+    case "reportDataGroup":
+      return `${process.env.NEXT_PUBLIC_API_BASE_URL}api/GroupDataset/SaveReportDataGroup`;
+    case "reportGroup":
+      return `${process.env.NEXT_PUBLIC_API_BASE_URL}api/GroupDataset/SaveReportGroup`;
+    case "reportDataset":
+      return `${process.env.NEXT_PUBLIC_API_BASE_URL}api/GroupDataset/SaveReportDataset`;
+  }
+};
+
+const buildSavePayload = (
+  entityType: DatasetEntityType,
+  entityId: number | undefined,
+  code: string | undefined,
+  name: string,
+  status: TicketStatus,
+) => {
+  switch (entityType) {
+    case "reportDataGroup":
+      return {
+        id: entityId ?? 0,
+        reportDataGroupCode: code ?? "",
+        reportDataGroupName: name,
+        reportDataGroupStatus: status,
+      };
+    case "reportGroup":
+      return {
+        id: entityId ?? 0,
+        reportGroupCode: code ?? "",
+        reportGroupName: name,
+        reportGroupStatus: status,
+      };
+    case "reportDataset":
+      return {
+        id: entityId ?? 0,
+        reportDatasetCode: code ?? "",
+        reportDatasetName: name,
+        reportDatasetStatus: status,
+      };
+  }
+};
+
+export default function AgencyOrgPage() {
+  const [form] = Form.useForm<DatasetFormValues>();
+  const [statusFilter, setStatusFilter] = useState<"ALL" | TicketStatus>("ALL");
+  const [formEntityType, setFormEntityType] =
+    useState<DatasetEntityType>("reportDataGroup");
+  const [tableEntityType, setTableEntityType] =
+    useState<DatasetEntityType>("reportDataGroup");
+  const [editingRecord, setEditingRecord] = useState<DatasetRecord | null>(
+    null,
+  );
+  const [query, setQuery] = useState("");
+  const [masterData, setMasterData] =
+    useState<ApiGroupDatasetTableData>(EMPTY_MASTER_DATA);
+  const [loading, setLoading] = useState(true);
+  const { token } = usePermissions();
+
+  const selectedName = Form.useWatch("selectedName", form);
+
+  useEffect(() => {
+    fetchData();
+  }, []);
+
+  const fetchData = async () => {
+    try {
+      setLoading(true);
+
+      const res = await fetch(
+        `${process.env.NEXT_PUBLIC_API_BASE_URL}api/GroupDataset/ListTable`,
+        {
+          headers: {
+            Authorization: `Bearer ${token}`,
+          },
+        },
+      );
+
+      if (!res.ok) {
+        console.error("Status:", res.status);
+        setMasterData(EMPTY_MASTER_DATA);
+        return;
+      }
+
+      const result = (await res.json()) as ApiGroupDatasetTableResponse;
+
+      if (Number(result?.status ?? 1) !== 1) {
+        setMasterData(EMPTY_MASTER_DATA);
+        Swal.fire({
+          icon: "error",
+          title: "โหลดข้อมูลไม่สำเร็จ",
+          text: result?.message ?? "ไม่สามารถดึงข้อมูลได้",
+          confirmButtonText: "ตกลง",
+        });
+        return;
+      }
+
+      setMasterData({
+        reportDataGroups: Array.isArray(result.dataenum?.reportDataGroups)
+          ? result.dataenum.reportDataGroups
+          : [],
+        reportGroups: Array.isArray(result.dataenum?.reportGroups)
+          ? result.dataenum.reportGroups
+          : [],
+        reportDatasets: Array.isArray(result.dataenum?.reportDatasets)
+          ? result.dataenum.reportDatasets
+          : [],
+      });
+    } catch (error) {
+      console.error(error);
+      setMasterData(EMPTY_MASTER_DATA);
+      Swal.fire({
+        icon: "error",
+        title: "โหลดข้อมูลไม่สำเร็จ",
+        text: "ไม่สามารถดึงข้อมูลจาก API ได้ กรุณาลองใหม่อีกครั้ง",
+        confirmButtonText: "ตกลง",
+      });
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const records = useMemo<DatasetRecord[]>(() => {
+    return [
+      ...masterData.reportDataGroups.map((item) => ({
+        rowKey: `reportDataGroup-${item.id}`,
+        entityType: "reportDataGroup" as const,
+        entityId: item.id,
+        code: item.reportDataGroupCode,
+        name: item.reportDataGroupName,
+        status: item.reportDataGroupStatus,
+      })),
+      ...masterData.reportGroups.map((item) => ({
+        rowKey: `reportGroup-${item.id}`,
+        entityType: "reportGroup" as const,
+        entityId: item.id,
+        code: item.reportGroupCode,
+        name: item.reportGroupName,
+        status: item.reportGroupStatus,
+      })),
+      ...masterData.reportDatasets.map((item) => ({
+        rowKey: `reportDataset-${item.id}`,
+        entityType: "reportDataset" as const,
+        entityId: item.id,
+        code: item.reportDatasetCode,
+        name: item.reportDatasetName,
+        status: item.reportDatasetStatus,
+      })),
+    ];
+  }, [masterData]);
+
+  const entityOptions = useMemo(() => {
+    if (formEntityType === "reportDataGroup") {
+      return masterData.reportDataGroups.map((item) => ({
+        value: item.reportDataGroupName,
+        label: item.reportDataGroupName,
+      }));
+    }
+
+    if (formEntityType === "reportGroup") {
+      return masterData.reportGroups.map((item) => ({
+        value: item.reportGroupName,
+        label: item.reportGroupName,
+      }));
+    }
+
+    return masterData.reportDatasets.map((item) => ({
+      value: item.reportDatasetName,
+      label: item.reportDatasetName,
+    }));
+  }, [formEntityType, masterData]);
+
+  const filteredRecords = useMemo(() => {
+    const keyword = query.trim().toLowerCase();
+
+    return records.filter((record) => {
+      if (record.entityType !== tableEntityType) {
+        return false;
+      }
+
+      if (statusFilter !== "ALL" && record.status !== statusFilter) {
+        return false;
+      }
+
+      if (!keyword) {
+        return true;
+      }
+
+      return `${record.code} ${record.name}`.toLowerCase().includes(keyword);
+    });
+  }, [query, records, statusFilter, tableEntityType]);
+
+  const handleFormEntityTypeChange = (value: DatasetEntityType) => {
+    setFormEntityType(value);
+    setEditingRecord(null);
+    form.setFieldsValue({
+      selectedName: undefined,
+      customName: undefined,
+    });
+  };
+
+  const handleEditRecord = useCallback(
+    (record: DatasetRecord) => {
+      setEditingRecord(record);
+      setFormEntityType(record.entityType);
+      form.setFieldsValue({
+        selectedName: undefined,
+        customName: undefined,
+        editName: record.name,
+      });
+      window.scrollTo({ top: 0, behavior: "smooth" });
+    },
+    [form],
+  );
+
+  const resetForm = () => {
+    form.resetFields();
+    setEditingRecord(null);
+    setFormEntityType("reportDataGroup");
+  };
+
+  const updateLocalStatus = (
+    entityType: DatasetEntityType,
+    entityId: number,
+    status: TicketStatus,
+  ) => {
+    setMasterData((prev) => {
+      if (entityType === "reportDataGroup") {
+        return {
+          ...prev,
+          reportDataGroups: prev.reportDataGroups.map((item) =>
+            item.id === entityId
+              ? { ...item, reportDataGroupStatus: status }
+              : item,
+          ),
+        };
+      }
+
+      if (entityType === "reportGroup") {
+        return {
+          ...prev,
+          reportGroups: prev.reportGroups.map((item) =>
+            item.id === entityId
+              ? { ...item, reportGroupStatus: status }
+              : item,
+          ),
+        };
+      }
+
+      return {
+        ...prev,
+        reportDatasets: prev.reportDatasets.map((item) =>
+          item.id === entityId
+            ? { ...item, reportDatasetStatus: status }
+            : item,
+        ),
+      };
+    });
+  };
+
+  const changeStatus = useCallback(
+    async (record: DatasetRecord, statusValue: TicketStatus) => {
+      try {
+        const res = await fetch(getSaveEndpoint(record.entityType), {
+          method: "POST",
+          headers: {
+            Authorization: `Bearer ${token}`,
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify(
+            buildSavePayload(
+              record.entityType,
+              record.entityId,
+              record.code,
+              record.name,
+              statusValue,
+            ),
+          ),
+        });
+
+        if (!res.ok) {
+          throw new Error("update failed");
+        } else {
+          Swalhandle(2);
+        }
+
+        updateLocalStatus(record.entityType, record.entityId, statusValue);
+      } catch (error) {
+        console.error(error);
+        // Swal.fire({
+        //   icon: "error",
+        //   title: "แก้ไขสถานะไม่สำเร็จ",
+        //   text: "ไม่สามารถบันทึกการเปลี่ยนสถานะได้",
+        //   confirmButtonText: "ตกลง",
+        // });
+        Swalhandle(0);
+      }
+    },
+    [],
+  );
+
+  const columns: ColumnsType<DatasetRecord> = useMemo(
+    () => [
+      {
+        title: "ลำดับ",
+        width: 80,
+        align: "center",
+        render: (_: DatasetRecord, __: DatasetRecord, index: number) =>
+          index + 1,
+        sorter: (a, b) => a.entityId - b.entityId,
+      },
+      // {
+      //   title: "รหัส",
+      //   dataIndex: "code",
+      //   key: "code",
+      //   width: 140,
+      // },
+      {
+        title: getEntityLabel(tableEntityType),
+        dataIndex: "name",
+        key: "name",
+        width: 320,
+        sorter: (a, b) => a.name.localeCompare(b.name),
+      },
+      {
+        title: "สถานะ",
+        dataIndex: "status",
+        width: 110,
+        align: "center",
+        sorter: (a, b) => a.status.localeCompare(b.status),
+        render: (_: DatasetRecord, row: DatasetRecord) => (
+          <StatusButton
+            isActive={row.status === "Y"}
+            onClick={async () => {
+              const nextStatus: TicketStatus = row.status === "Y" ? "N" : "Y";
+              const willEnable = nextStatus === "Y";
+              const result = await Swal.fire({
+                icon: "question",
+                title: willEnable
+                  ? "ต้องการเปิดใช้งานรายการนี้ใช่หรือไม่?"
+                  : "ต้องการปิดการใช้งานรายการนี้ใช่หรือไม่?",
+                text: `${row.name}`,
+                showCancelButton: true,
+                confirmButtonText: "ตกลง",
+                cancelButtonText: "ยกเลิก",
+                confirmButtonColor: "#059669",
+                cancelButtonColor: "#ff271f",
+              });
+
+              if (result.isConfirmed) {
+                await changeStatus(row, nextStatus);
+              }
+            }}
+          />
+        ),
+      },
+      {
+        title: "จัดการ",
+        key: "actions",
+        width: 120,
+        align: "center",
+        render: (_: unknown, record: DatasetRecord) => (
+          <Space size={6}>
+            <Button
+              type="text"
+              icon={<EditOutlined />}
+              disabled={record.status !== "Y"}
+              onClick={() => handleEditRecord(record)}
+            />
+          </Space>
+        ),
+      },
+    ],
+    [changeStatus, handleEditRecord, tableEntityType],
+  );
+
+  const submitTicket = async (values: DatasetFormValues) => {
+    const finalName = editingRecord
+      ? (values.editName?.trim() ?? "")
+      : values.selectedName === OTHER_OPTION_VALUE
+        ? (values.customName?.trim() ?? "")
+        : values.selectedName;
+
+    if (!finalName) {
+      return;
+    }
+
+    try {
+      const res = await fetch(getSaveEndpoint(formEntityType), {
+        method: "POST",
+        headers: {
+          Authorization: `Bearer ${token}`,
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify(
+          buildSavePayload(
+            formEntityType,
+            editingRecord?.entityId,
+            editingRecord?.code,
+            finalName,
+            editingRecord?.status ?? "Y",
+          ),
+        ),
+      });
+
+      if (!res.ok) {
+        throw new Error("save failed");
+      } else {
+        Swalhandle(1);
+      }
+
+      resetForm();
+      fetchData();
+    } catch (error) {
+      console.error(error);
+      Swal.fire({
+        icon: "error",
+        title: "บันทึกข้อมูลไม่สำเร็จ",
+        text: "ไม่สามารถบันทึกข้อมูลได้ กรุณาลองใหม่อีกครั้ง",
+        confirmButtonText: "ตกลง",
+      });
+    }
+  };
+
+  return (
+    <div className="mx-auto w-full max-w-7xl px-4 py-6">
+      <Breadcrumb
+        className="mb-2 text-black/50"
+        items={[
+          { title: <Link href="/main">หน้าหลัก</Link> },
+          { title: "การจัดการ (Management)" },
+          { title: "จัดการกลุ่มชุดข้อมูล" },
+        ]}
+      />
+
+      <div className="mb-5 flex flex-col gap-2 sm:flex-row sm:items-end sm:justify-between">
+        <div>
+          <h1 className="text-2xl font-extrabold tracking-tight text-black/85">
+            จัดการกลุ่มชุดข้อมูล
+          </h1>
+        </div>
+      </div>
+
+      <div className="overflow-hidden rounded-2xl border border-black/10 bg-white/70 shadow-sm backdrop-blur">
+        <div className="bg-linear-to-r from-violet-600/15 via-sky-400/10 to-transparent px-5 py-3">
+          <div className="text-[14px] font-semibold text-black/85">
+            {editingRecord ? "แก้ไขข้อมูล" : "เพิ่มข้อมูล"}
+          </div>
+          {editingRecord && (
+            <Tag color="blue" className="mb-2">
+              กำลังแก้ไข: {getEntityLabel(editingRecord.entityType)}
+            </Tag>
+          )}
+        </div>
+
+        <div className="px-5 py-5">
+          <Form form={form} layout="vertical" onFinish={submitTicket}>
+            <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
+              <Form.Item label="เลือกชนิดกลุ่มข้อมูล">
+                <Select
+                  value={formEntityType}
+                  onChange={handleFormEntityTypeChange}
+                  options={ENTITY_TYPE_OPTIONS}
+                  disabled={!!editingRecord}
+                />
+              </Form.Item>
+
+              {editingRecord ? (
+                <Form.Item
+                  name="editName"
+                  label={`แก้ไข${getEntityLabel(formEntityType)}`}
+                  rules={[
+                    {
+                      required: true,
+                      message: `กรุณากรอก${getEntityLabel(formEntityType)}`,
+                    },
+                  ]}
+                >
+                  <Input
+                    placeholder={`กรอก${getEntityLabel(formEntityType)}`}
+                  />
+                </Form.Item>
+              ) : (
+                <>
+                  <Form.Item
+                    name="selectedName"
+                    label={getEntityLabel(formEntityType)}
+                    rules={[
+                      {
+                        required: true,
+                        message: `กรุณาเลือก${getEntityLabel(formEntityType)}`,
+                      },
+                    ]}
+                  >
+                    <Select
+                      showSearch
+                      placeholder={`เลือก${getEntityLabel(formEntityType)}`}
+                      options={[
+                        ...entityOptions,
+                        { value: OTHER_OPTION_VALUE, label: "อื่นๆ" },
+                      ]}
+                      optionFilterProp="label"
+                    />
+                  </Form.Item>
+
+                  {selectedName === OTHER_OPTION_VALUE && (
+                    <Form.Item
+                      name="customName"
+                      label={`กรอก${getEntityLabel(formEntityType)}`}
+                      rules={[
+                        {
+                          required: true,
+                          message: `กรุณากรอก${getEntityLabel(formEntityType)}`,
+                        },
+                      ]}
+                    >
+                      <Input
+                        placeholder={`กรอก${getEntityLabel(formEntityType)}`}
+                      />
+                    </Form.Item>
+                  )}
+                </>
+              )}
+
+              <div className="col-span-1 mt-2 flex justify-center gap-2 md:col-span-2">
+                <Button
+                  type="primary"
+                  htmlType="submit"
+                  className={editingRecord ? "submit-btn" : "submit-btn"}
+                >
+                  {editingRecord ? "บันทึกการแก้ไข" : "เพิ่มข้อมูล"}
+                </Button>
+
+                <Button className="cancel-btn text-white!" onClick={resetForm}>
+                  ยกเลิก
+                </Button>
+              </div>
+            </div>
+          </Form>
+        </div>
+      </div>
+
+      <div className="mt-8">
+        <DataTable<DatasetRecord>
+          className="dashboard-table"
+          loading={loading}
+          showSearch
+          searchPlaceholder="ค้นหาชื่อกลุ่มข้อมูล"
+          onSearch={(value) => setQuery(value)}
+          showAddButton={false}
+          headerWrapperClassName="bg-linear-to-r from-violet-600/15 via-sky-400/10 to-transparent px-5 py-3"
+          headerTitle={
+            <div>
+              <div className="text-[14px] font-semibold text-black/85">
+                รายการข้อมูล
+              </div>
+              <div className="text-[12px] text-black/55">
+                เลือกชนิดข้อมูลเพื่อดูรายการที่ต้องการจัดการ
+              </div>
+            </div>
+          }
+          rightContent={
+            <div className="flex flex-wrap items-center gap-2">
+              <div className="text-[14px] font-semibold text-black/70">
+                ประเภทข้อมูล
+              </div>
+              <Select
+                value={tableEntityType}
+                onChange={(value) => setTableEntityType(value)}
+                options={ENTITY_TYPE_OPTIONS}
+                style={{ width: 220 }}
+              />
+
+              <div className="text-[14px] font-semibold text-black/70">
+                สถานะ
+              </div>
+              <Select
+                value={statusFilter}
+                onChange={(value) => setStatusFilter(value)}
+                options={STATUS_FILTER_OPTIONS}
+                style={{ width: 160 }}
+              />
+            </div>
+          }
+          rowKey="rowKey"
+          columns={columns}
+          dataSource={filteredRecords}
+          pagination={{
+            showSizeChanger: true,
+          }}
+        />
+      </div>
+    </div>
+  );
+}

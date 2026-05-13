@@ -47,7 +47,8 @@ import {
   getOtherMetadataCode,
   expectMetadataFieldValue,
 } from "./helpers/oracle-db";
-import { login, logout } from "../share/login.spec";
+import { login} from "../share/login.spec";
+import { logout } from "../share/logout.spec";
 
 type SelectItem = {
   title: string;
@@ -1179,9 +1180,9 @@ export async function selectAntdMultipleOptionBySearch(
   const selectorBox = select.locator(".ant-select-selector");
 
   if (await selectorBox.isVisible().catch(() => false)) {
-    await selectorBox.click({ force: true, timeout: 5000 });
+    await selectorBox.click({ force: true });
   } else {
-    await select.click({ force: true, timeout: 5000 });
+    await select.click({ force: true });
   }
 
   await page.waitForTimeout(200);
@@ -1190,7 +1191,7 @@ export async function selectAntdMultipleOptionBySearch(
 
   if (await searchInput.isVisible().catch(() => false)) {
     await searchInput.fill("");
-    await searchInput.type(searchText, { delay: 10 });
+    await searchInput.pressSequentially(searchText, { delay: 10 });
   } else {
     await page.keyboard.press("Control+A");
     await page.keyboard.type(searchText, { delay: 10 });
@@ -1210,7 +1211,7 @@ export async function selectAntdMultipleOptionBySearch(
   await expect(option).toBeVisible({ timeout: 10000 });
 
   await option.scrollIntoViewIfNeeded();
-  await option.click({ force: true, timeout: 5000 });
+  await option.click({ force: true });
 
   await closeAntdDropdown(page);
 }
@@ -1866,11 +1867,7 @@ export async function fillCommonMetadataSelects(page: Page) {
 
   await fillMultiSelectOther(page, "#admin-report-format", dataFormatData);
 
-  await fillSingleSelectOther(
-    page,
-    "#admin-report-governance",
-    dataGovernanceData.public,
-  );
+  await fillSingleSelectOther(page, "#admin-report-governance", dataGovernanceData.public);
 
   await fillSingleSelectOther(page, "#admin-report-license", licenseData);
 }
@@ -1918,6 +1915,211 @@ export async function setDictionaryRequired(
     await checkboxWrapper.click();
     await page.waitForTimeout(200);
   }
+}
+
+export async function expectViewPageMatchesDatabase(
+  page: Page,
+  datasetGroupId: number,
+) {
+  const dbResult = await expectDatasetSavedById(datasetGroupId);
+
+  const snapshot = dbResult as {
+    dataset: Record<string, unknown>[];
+    metadata: Record<string, unknown>[];
+    dictionary: Record<string, unknown>[];
+  };
+
+  const datasetRow = snapshot.dataset[0];
+  const metadataRow = snapshot.metadata[0];
+  const dictionaryRow = snapshot.dictionary[0];
+
+  /**
+   * Step 1: ข้อมูลรายงาน
+   */
+  const reportName = getDbValue(datasetRow, [
+    "DATASET_GROUP_NAME",
+    "datasetGroupName",
+    "REPORT_NAME",
+    "reportName",
+  ]);
+
+  if (reportName) {
+    await expect(page.locator("#admin-report-add-name")).toHaveValue(
+      reportName,
+      { timeout: 10000 },
+    );
+  }
+
+  /**
+   * หน้า View ต้องไม่มีปุ่ม save
+   */
+  await expect(page.locator("#admin-report-save")).toHaveCount(0);
+
+  /**
+   * Step 2: Metadata
+   */
+  await page.locator("#admin-report-step-1-next").click();
+  await page.waitForTimeout(500);
+
+  await expect(page.locator("#admin-report-type")).toBeVisible({
+    timeout: 10000,
+  });
+
+  const datasetName = getDbValue(metadataRow, [
+    "DATASET_NAME",
+    "datasetName",
+    "NAME",
+    "name",
+  ]);
+
+  if (datasetName) {
+    await expect(page.locator("#admin-report-dataset-name")).toHaveValue(
+      datasetName,
+      { timeout: 10000 },
+    );
+  }
+
+  const url = getDbValue(metadataRow, [
+    "URL",
+    "url",
+    "DATASET_URL",
+    "datasetUrl",
+  ]);
+
+  const urlInput = page.locator("#admin-report-url");
+
+  if (url && await urlInput.isVisible().catch(() => false)) {
+    await expect(urlInput).toHaveValue(url, {
+      timeout: 10000,
+    });
+  }
+
+  /**
+   * Step 3: Data Dictionary
+   */
+  await page.locator("#admin-report-step-2-next").click();
+
+  await expect(
+    page.getByText("3. Data Dictionary", { exact: true }),
+  ).toBeVisible({
+    timeout: 10000,
+  });
+
+  const columnName = getDbValue(dictionaryRow, [
+    "COLUMN_NAME",
+    "columnName",
+    "FIELD_NAME",
+    "fieldName",
+  ]);
+
+  if (columnName) {
+    await expect(page.getByTestId("dict-column-name-0")).toHaveValue(
+      columnName,
+      { timeout: 10000 },
+    );
+  }
+
+  const description = getDbValue(dictionaryRow, [
+    "DESCRIPTION",
+    "description",
+    "COLUMN_DESCRIPTION",
+    "columnDescription",
+  ]);
+
+  if (description) {
+    await expect(page.getByTestId("dict-description-0")).toHaveValue(
+      description,
+      { timeout: 10000 },
+    );
+  }
+
+  const sampleData = getDbValue(dictionaryRow, [
+    "SAMPLE_DATA",
+    "sampleData",
+    "EXAMPLE",
+    "example",
+  ]);
+
+  if (sampleData) {
+    await expect(page.getByTestId("dict-sample-data-0")).toHaveValue(
+      sampleData,
+      { timeout: 10000 },
+    );
+  }
+}
+
+function getDbValue(
+  row: Record<string, unknown> | undefined,
+  keys: string[],
+) {
+  if (!row) return "";
+
+  for (const key of keys) {
+    const value = row[key];
+
+    if (value !== undefined && value !== null) {
+      return String(value);
+    }
+  }
+
+  return "";
+}
+
+export async function searchReportAndClickView(
+  page: Page,
+  reportNamePrefix: string,
+) {
+  const searchInput = page.locator("#admin-report-search-name");
+
+  await expect(searchInput).toBeVisible({ timeout: 10000 });
+
+  await searchInput.click();
+  await searchInput.fill("");
+
+  await searchInput.pressSequentially(reportNamePrefix, {
+    delay: 120,
+  });
+
+  await page.keyboard.press("Enter");
+
+  await page.waitForTimeout(1500);
+
+  const targetRow = page
+    .locator("tbody tr")
+    .filter({
+      hasText: reportNamePrefix,
+    })
+    .first();
+
+  await expect(targetRow).toBeVisible({
+    timeout: 15000,
+  });
+
+  const viewButton = targetRow
+    .locator("[id^='admin-report-view-']")
+    .first();
+
+  await expect(viewButton).toBeVisible({
+    timeout: 10000,
+  });
+
+  const viewButtonId = await viewButton.getAttribute("id");
+
+  if (!viewButtonId) {
+    throw new Error("ไม่พบ id ของปุ่ม view");
+  }
+
+  const datasetGroupId = Number(
+    viewButtonId.replace("admin-report-view-", ""),
+  );
+
+  if (!datasetGroupId) {
+    throw new Error(`ไม่สามารถอ่าน datasetGroupId จากปุ่ม: ${viewButtonId}`);
+  }
+
+  await viewButton.click();
+
+  return datasetGroupId;
 }
 
 export async function fillMetadataType(
@@ -2316,6 +2518,18 @@ export async function openManageReportAction(
   await actionButton.click();
 }
 
+export async function goToMetadataStepForView(page: Page) {
+  await page.locator("#admin-report-step-1-next").click();
+
+  // In view mode, we expect a non-interactive element.
+  // Let's use the dataset name label as a stable element to check for.
+  await expect(
+    page.getByText("ชื่อชุดข้อมูล", { exact: true }),
+  ).toBeVisible({
+    timeout: 10000,
+  });
+}
+
 export async function goToMetadataStep(page: Page) {
   await page.locator("#admin-report-step-1-next").click();
 
@@ -2557,6 +2771,7 @@ export async function applyEditValuesForType(
       "#admin-report-west-bound-longitude",
       values.westBoundLongitude,
     );
+
     await fillAndExpect(page, "#admin-report-url", values.url);
     return;
   }
@@ -2774,7 +2989,7 @@ test.describe("Manage Report Page", () => {
     { key: "other", name: "ข้อมูลประเภทอื่น ๆ ระบุ" },
   ] as const;
 
-  test("Scenario 0: ตรวจ validation Step 1 เมื่อกดถัดไปโดยไม่กรอกข้อมูล", async ({
+  test("Scenario validation: ตรวจ validation Step 1 เมื่อกดถัดไปโดยไม่กรอกข้อมูล", async ({
     page,
   }) => {
     await page.locator("#admin-report-step-1-next").click();
@@ -3119,7 +3334,7 @@ test.describe("Manage Report Page", () => {
     expect(dbResult.dictionary.length).toBeGreaterThan(0);
   });
 
-  test("Scenario fillMetadataTypeOther: กรอกข้อมูลรายงาน , กรอก Meatadata โดยเลือก ประเภทข้อมูลอื่น ๆ ระบุ และกรอกข้อมูล Datadictionary", async ({
+  test("Scenario fillMetadataTypeOther: กรอกข้อมูลรายงาน , กรอก Meatadata โดยเลือก ข้อมูลประเภทอื่น ๆ ระบุ และกรอกข้อมูล Datadictionary", async ({
     page,
   }) => {
     test.setTimeout(120000);
@@ -3366,94 +3581,7 @@ test.describe("Manage Report Page", () => {
     }
   });
 
-  // test.describe("Scenario Update: แก้ไขข้อมูลรายงานจากข้อมูลเดิมในหน้า Edit", () => {
-  //   const updateCases = [
-  //     {
-  //       key: "record",
-  //       name: "ข้อมูลระเบียน",
-  //       reportNamePrefix: "ระเบียน",
-  //     },
-  //     {
-  //       key: "statistic",
-  //       name: "ข้อมูลสถิติ",
-  //       reportNamePrefix: "สถิติ",
-  //     },
-  //     {
-  //       key: "geoSpatial",
-  //       name: "ข้อมูลภูมิสารสนเทศเชิงพื้นที่",
-  //       reportNamePrefix: "พื้นที่",
-  //     },
-  //     {
-  //       key: "multiple",
-  //       name: "ข้อมูลหลากหลายประเภท",
-  //       reportNamePrefix: "หลากหลาย",
-  //     },
-  //     {
-  //       key: "other",
-  //       name: "ข้อมูลประเภทอื่น ๆ ระบุ",
-  //       reportNamePrefix: "อื่น",
-  //     },
-  //   ] as const;
-
-  //   for (const item of updateCases) {
-  //     test(`Scenario Update: แก้ไขข้อมูลรายงาน - ${item.name}`, async ({ page }) => {
-  //       test.setTimeout(360000);
-  //       await mLogin(page);
-
-
-
-  //       /**
-  //        * 1. ค้นหาชื่อรายงานจาก reportNamePrefix
-  //        * เช่น ระเบียน / สถิติ / พื้นที่ / หลากหลาย / อื่น
-  //        */
-  //       await searchReportAndClickEdit(page, item.reportNamePrefix);
-  //       //enter
-  //       await page.keyboard.press("Enter");
-
-  //       /**
-  //        * 2. Step 1: แก้ไขข้อมูลรายงานจากข้อมูลเดิม
-  //        */
-  //       const updatedReportName = buildUpdatedReportName(item.reportNamePrefix);
-
-  //       await updateReportStep1(page, updatedReportName);
-
-  //       await page.locator("#admin-report-step-1-next").click();
-
-  //       /**
-  //        * 3. Step 2: แก้ไข Metadata ตามประเภทข้อมูลเดิม
-  //        * ห้ามเรียก fillMetadataType() เพราะไม่ต้องเปลี่ยนประเภทข้อมูล
-  //        */
-  //       await expect(page.locator("#admin-report-type")).toBeVisible({
-  //         timeout: 10000,
-  //       });
-
-  //       const editValues = buildScenarioValues(item.key, "edit");
-
-  //       await updateMetadataByCurrentType(page, item.key, editValues);
-
-  //       await page.locator("#admin-report-step-2-next").click();
-
-  //       /**
-  //        * 4. Step 3: แก้ไข Data Dictionary
-  //        */
-  //       await expect(
-  //         page.getByText("3. Data Dictionary", { exact: true }),
-  //       ).toBeVisible({
-  //         timeout: 10000,
-  //       });
-
-  //       await updateDictionaryForEdit(page, editValues);
-
-  //       /**
-  //        * 5. Save
-  //        */
-  //       await saveReport(page);
-
-  //       console.log(`Update สำเร็จ: ${item.name}`);
-  //       console.log(`ชื่อรายงานใหม่: ${updatedReportName}`);
-  //     });
-  //   }
-  // });
+ 
 
   test("Scenario updateMetadataRecord: แก้ไขข้อมูลรายงาน , แก้ไข Metadata โดยเลือก ข้อมูลระเบียน และแก้ไขข้อมูล Datadictionary", async ({ page }) => {
     test.setTimeout(240000);
@@ -3536,7 +3664,9 @@ test.describe("Manage Report Page", () => {
     console.log("ชื่อรายงานใหม่:", updatedReportName);
   });
 
-  test("Scenario updateMetadataGeoSpatial: แก้ไขข้อมูลรายงาน , แก้ไข Metadata โดยเลือก ข้อมูลภูมิสารสนเทศเชิงพื้นที่ และแก้ไขข้อมูล Datadictionary", async ({ page }) => {
+  test("Scenario updateMetadataGeoSpatial: แก้ไขข้อมูลรายงาน , แก้ไข Metadata โดยเลือก ข้อมูลภูมิสารสนเทศเชิงพื้นที่ และแก้ไขข้อมูล Datadictionary", async ({
+    page,
+  }) => {
     test.setTimeout(240000);
 
     const typeKey = "geoSpatial";
@@ -3574,7 +3704,9 @@ test.describe("Manage Report Page", () => {
     console.log("ชื่อรายงานใหม่:", updatedReportName);
   });
 
-  test("Scenario updateMetadataMultiple: แก้ไขข้อมูลรายงาน , แก้ไข Metadata โดยเลือก ข้อมูลหลากหลายประเภท และแก้ไขข้อมูล Datadictionary", async ({ page }) => {
+  test("Scenario updateMetadataMultiple: แก้ไขข้อมูลรายงาน , แก้ไข Metadata โดยเลือก ข้อมูลหลากหลายประเภท และแก้ไขข้อมูล Datadictionary", async ({
+    page,
+  }) => {
     test.setTimeout(240000);
 
     const typeKey = "multiple";
@@ -3612,7 +3744,9 @@ test.describe("Manage Report Page", () => {
     console.log("ชื่อรายงานใหม่:", updatedReportName);
   });
 
-  test("Scenario updateMetadataOther: แก้ไขข้อมูลรายงาน , แก้ไข Metadata โดยเลือก ข้อมูลประเภทอื่น ๆ ระบุ และแก้ไขข้อมูล Datadictionary", async ({ page }) => {
+  test("Scenario updateMetadataOther: แก้ไขข้อมูลรายงาน , แก้ไข Metadata โดยเลือก ข้อมูลประเภทอื่น ๆ ระบุ และแก้ไขข้อมูล Datadictionary", async ({
+    page,
+  }) => {
     test.setTimeout(240000);
 
     const typeKey = "other";
@@ -3649,5 +3783,24 @@ test.describe("Manage Report Page", () => {
     console.log("Update สำเร็จ: ข้อมูลประเภทอื่น ๆ ระบุ");
     console.log("ชื่อรายงานใหม่:", updatedReportName);
   });
+
+  test("Scenario View: ดูข้อมูลรายงาน - ข้อมูลระเบียน", async ({ page }) => {
+  test.setTimeout(240000);
+
+  const reportNamePrefix = "รายงาน51071b";
+
+  const datasetGroupId = await searchReportAndClickView(
+    page,
+    reportNamePrefix,
+  );
+
+  await expect(page.locator("#admin-report-add-name")).toBeVisible({
+    timeout: 30000,
+  });
+
+  await expectViewPageMatchesDatabase(page, datasetGroupId);
+
+  console.log("View ข้อมูลระเบียนถูกต้อง:", datasetGroupId);
+});
 
 });

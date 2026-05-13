@@ -35,7 +35,7 @@ export default defineConfig({
   ],
   /* Shared settings for all the projects below. See https://playwright.dev/docs/api/class-testoptions. */
   use: {
-    baseURL: process.env.APP_URL || "http://localhost:3000",
+    baseURL: "http://localhost:3000",
     // launchOptions: {
     //   slowMo: 1000,
     //   // หน่วงทุก action 2 วินาที
