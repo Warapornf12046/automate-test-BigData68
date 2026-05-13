@@ -4,8 +4,8 @@ import { expect, Page } from "@playwright/test";
 export async function login(page: Page) {
   await page.goto("/main");
 
-  const loginButton = page.locator('a[id="lonin-btn"]');
-
+  const loginButton = page.locator("#login-btn");
+  await page.waitForSelector("#login-btn", { state: "visible" }); 
   if (await loginButton.isVisible()) {
     await loginButton.click();
 
@@ -24,6 +24,7 @@ export async function login(page: Page) {
       timeout: 15000,
     });
   } else {
+    console.log("ไม่มีปุ่ม");
   }
 }
 
