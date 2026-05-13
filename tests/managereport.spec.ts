@@ -965,6 +965,7 @@ export function getMetadataInputFields(): InputFieldTestData[] {
 // }
 export async function mLogin(page: Page) {
   await login(page);
+  // await page.goto("/main");
 
   await page.locator("button#จัดการข้อมูล-5").click();
   await page.locator("a#จัดการรายงาน-3").click();
