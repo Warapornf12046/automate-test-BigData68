@@ -121,6 +121,50 @@ async function submitCustomDataset(page: Page, entityLabel: string) {
   });
 }
 
+ 
+
+async function updateCustomName(page: Page, customName: string) {
+  const customNameInput = page.locator("#editName");
+  
+  await expect(customNameInput).toBeVisible({ timeout: 10000 });
+  
+  await customNameInput.fill(customName); // กรอกข้อมูลใหม่ที่ต้องการ
+}
+
+export async function searchReportAndClickEdit(page: Page, name: string) {
+  const searchInput = page.locator("input[placeholder='ค้นหาชื่อกลุ่มข้อมูล']");
+  
+  await expect(searchInput).toBeVisible({ timeout: 10000 });
+
+  await searchInput.click();
+  await searchInput.fill("");
+
+  await searchInput.pressSequentially(name, {
+    delay: 120, // เพิ่มความเร็วการพิมพ์
+  });
+
+  await page.keyboard.press("Enter");
+
+  // ค้นหาชื่อที่ตรงกับรายชื่อที่ค้นหาในตาราง
+  const targetRow = page.locator("tbody tr").filter({
+    hasText: name,
+  }).first();
+
+  await expect(targetRow).toBeVisible({
+    timeout: 15000,
+  });
+
+  // คลิกปุ่ม Edit
+  const editButton = targetRow.locator("#edit").first();
+
+  await expect(editButton).toBeVisible({
+    timeout: 10000,
+  });
+
+  await editButton.click();
+}
+
+
 
 test.describe("manage dataset", () => {
 
@@ -146,6 +190,31 @@ test.describe("manage dataset", () => {
   //   test.setTimeout(360000);
   //   await submitCustomDataset(page, ENTITY_TYPE_OPTIONS[2].label);
   // });
+
+   
+
+  test("Scenario Update Report Data Group", async ({ page }) => {
+  test.setTimeout(180000); 
+
+  const reportNamePrefix = "test222"; // กำหนดชื่อกลุ่มข้อมูลรายงานที่ต้องการค้นหา
+  const updatedReportName = `${reportNamePrefix}-${randomText(8)}`; // สร้างชื่อใหม่
+
+  // 1. ค้นหาชื่อจากฟิลด์ค้นหาชื่อกลุ่มข้อมูล
+  await searchReportAndClickEdit(page, reportNamePrefix);
+
+  // 2. แก้ไขข้อมูลในช่อง customName
+  await updateCustomName(page, updatedReportName);
+
+  // 3. คลิกปุ่ม "บันทึกการแก้ไข"
+  await page.getByRole("button", { name: "บันทึกการแก้ไข" }).click();
+
+  // 4. รอข้อความ "บันทึกข้อมูลเสร็จสิ้น"
+  await expect(page.getByText("บันทึกข้อมูลเสร็จสิ้น")).toBeVisible({
+    timeout: 30000,
+  });
+
+  console.log(`ข้อมูลได้รับการอัปเดตเรียบร้อยแล้ว: ${updatedReportName}`);
+});
 
   
 });
