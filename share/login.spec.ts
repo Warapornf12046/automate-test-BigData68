@@ -2,24 +2,32 @@
 import { expect, Page } from "@playwright/test";
 
 export async function login(page: Page) {
-  await page.goto("/login", {
-    waitUntil: "domcontentloaded",
-  });
+  await page.goto("/main");
 
-  const ldapButton = page.locator('button[data-login-type="LDAP"]');
-  const username = page.locator("#username");
-  const password = page.locator("#password");
+  const loginButton = page.locator('a[id="lonin-btn"]');
 
-  await ldapButton.click();
+  if (await loginButton.isVisible()) {
+    await loginButton.click();
+    await page.goto("/login", {
+      waitUntil: "domcontentloaded",
+    });
 
-  await username.fill("admin");
-  await password.fill("password123");
+    const ldapButton = page.locator('button[data-login-type="LDAP"]');
+    const username = page.locator("#username");
+    const password = page.locator("#password");
 
-  await page.locator('button[type="submit"]').click();
+    await ldapButton.click();
 
-  await expect(page).toHaveURL(/.*main/, {
-    timeout: 15000,
-  });
+    await username.fill("admin");
+    await password.fill("password123");
+
+    await page.locator('button[type="submit"]').click();
+
+    await expect(page).toHaveURL(/.*main/, {
+      timeout: 15000,
+    });
+  } else {
+  }
 }
 
 // export async function logout(page: Page) {
@@ -32,14 +40,14 @@ export async function logout(page: Page) {
   const swalConfirm = page.locator(".swal2-confirm").last();
 
   if (await swalConfirm.isVisible().catch(() => false)) {
-    await swalConfirm.click().catch(() => { });
+    await swalConfirm.click().catch(() => {});
     await page.waitForTimeout(1000);
   }
 
   await page.locator("button#showmenudetail").click();
   await page.locator("button#logout").click();
 
-  await page.waitForLoadState("domcontentloaded").catch(() => { });
+  await page.waitForLoadState("domcontentloaded").catch(() => {});
 
   await expect(page).toHaveURL(/.*login/, {
     timeout: 30000,

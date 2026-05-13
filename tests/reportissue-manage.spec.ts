@@ -24,4 +24,6 @@ async function adddata(page: Page) {
   await page.locator('input[id="issueCategoryName"]').fill(issueCategoryName);
 
   await selectAntdOption(page, 'input[id="urgencyLevelCode"]', "กลาง");
+
+  await page.locator("#submit").click();
 }
