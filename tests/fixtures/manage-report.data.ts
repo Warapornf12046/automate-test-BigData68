@@ -388,8 +388,8 @@ export const dataFormatData = [
   },
   {
     title: "อื่น ๆ ระบุ .....",
-    searchText: "อื่น",
-    optionText: "อื่น ๆ ระบุ",
+    searchText: "อื่น ๆ ระบุ .....",
+    optionText: "อื่น ๆ ระบุ .....",
     value: "84",
     code: "99",
     isOther: true,
@@ -441,15 +441,23 @@ export const dataGovernanceData = {
 } as const;
 
 export const licenseData = {
-  selector: "#admin-report-license",
-  title: "Others License",
-  searchText: "Others License",
-  optionText: "Others License",
-  value: "95",
+  // selector: "Others License",
+  // title: "Others License",
+  // searchText: "Others License",
+  // optionText: "Others License",
+  // value: "95",
+  // code: "99",
+  // isOther: true,
+  // otherInputSelector: "#admin-report-license-other",
+  // otherValue: `รายละเอียดสัญญาอนุญาตให้ใช้ข้อมูล Others License ${randomText(4)}`,
+  selector: "สัญญาอนุญาตให้ใช้ข้อมูล19",
+  title: "สัญญาอนุญาตให้ใช้ข้อมูล19",
+  searchText: "สัญญาอนุญาตให้ใช้ข้อมูล19",
+  optionText: "สัญญาอนุญาตให้ใช้ข้อมูล19",
+  value: "278",
   code: "99",
-  isOther: true,
-  otherInputSelector: "#admin-report-license-other",
-  otherValue: `รายละเอียดสัญญาอนุญาตให้ใช้ข้อมูล Others License ${randomText(4)}`,
+  isOther: false,
+
 } as const;
 
 // ------------------------------

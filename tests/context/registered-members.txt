@@ -1,0 +1,706 @@
+"use client";
+
+import { usePermissions } from "@/app/components/share/PermissionsContext";
+import { useCallback, useEffect, useRef } from "react";
+import Link from "next/link";
+import { useMemo, useState } from "react";
+import type { ColumnsType } from "antd/es/table";
+import DataTable from "@/app/components/share/Table";
+import { UserOutlined } from "@ant-design/icons";
+import { EyeOutlined } from "@ant-design/icons";
+// import Swal from "sweetalert2";
+
+import {
+  Breadcrumb,
+  Button,
+  Form,
+  Modal,
+  Select,
+  Space,
+  Typography,
+  Tag,
+  Input,
+  Alert,
+  Badge,
+} from "antd";
+import Swalhandle from "@/app/components/share/Swalhandle";
+
+type Ticket = {
+  id: number;
+  fname: string;
+  lname: string;
+  email: string;
+  memberTypeCode: string;
+  memberTypeName: string;
+  organization: string;
+  roleId: number;
+  roleName: string;
+  lastLogin: string;
+};
+
+const accessOptions = [
+  { value: "ALL", label: "ทั้งหมด" },
+  { value: "HAS_ROLE", label: "มีสิทธิ์การเข้าถึง" },
+  { value: "NO_ROLE", label: "ไม่มีสิทธิ์การเข้าถึง" },
+];
+
+export default function DetailMemberPage() {
+  const { user: authUser, token } = usePermissions();
+  const [form] = Form.useForm();
+  const [saving, setSaving] = useState(false);
+  const [query, setQuery] = useState("");
+  const [viewForm, setViewForm] = useState<Ticket | null>(null);
+  const [editingRecord, setEditingRecord] = useState<Ticket | null>(null);
+  const [openView, setOpenView] = useState(false);
+  const [accessTypes, setAccessTypes] = useState<
+    { value: number; label: string }[]
+  >([]);
+  const [accessFilter, setAccessFilter] = useState<string>("ALL");
+  const [tickets, setTickets] = useState<Ticket[]>([]);
+  const noAccessCount = useMemo(() => {
+    return tickets.filter((t) => !t.roleId).length;
+  }, [tickets]);
+
+  const formRef = useRef<HTMLDivElement | null>(null);
+  useEffect(() => {
+    if (editingRecord && formRef.current) {
+      formRef.current.scrollIntoView({
+        behavior: "smooth",
+        block: "start",
+      });
+    }
+  }, [editingRecord]);
+
+  const fetchAccessType = useCallback(async () => {
+    try {
+      const res = await fetch(
+        `${process.env.NEXT_PUBLIC_API_BASE_URL}api/MasterData/roles`,
+      );
+      const data = await res.json();
+
+      if (data?.status === 1 && Array.isArray(data.dataenum)) {
+        const mapped = data.dataenum
+          .map((x: any) => ({
+            value: Number(x.code),
+            label: x.name,
+          }))
+          .sort((a: any, b: any) => a.value - b.value);
+
+        setAccessTypes(mapped);
+      }
+    } catch (error) {
+      console.error("Failed to fetch Access types:", error);
+    }
+  }, []);
+
+  const filteredAccessTypes = useMemo(() => {
+    if (!editingRecord) return accessTypes;
+
+    // 1. กำหนดค่าเริ่มต้นเป็นสิทธิ์ทั้งหมดก่อน
+    let options = accessTypes;
+
+    // 2. กรองตามประเภทสมาชิกตามเงื่อนไขที่กำหนด
+    if (editingRecord.memberTypeCode === "PUB") {
+      options = accessTypes.filter((r) => r.value === 5); // ประชาชนทั่วไป
+    } else if (editingRecord.memberTypeCode === "ORG") {
+      options = accessTypes.filter((r) => r.value === 4); // หน่วยงานภายนอก
+    }
+
+    // 3.ส่วนสำคัญที่ทำให้ตัวเลขกลายเป็นข้อความ
+    // เช็คว่าสิทธิ์เดิมของผู้ใช้ มีอยู่ใน options ที่โดนกรองไปแล้วหรือเปล่า
+    const currentRoleId = editingRecord.roleId;
+
+    if (currentRoleId) {
+      const hasCurrentRole = options.some((r) => r.value === currentRoleId);
+
+      // ถ้าไม่มีสิทธิ์เดิมอยู่ในตัวเลือก ให้ไปดึงจาก accessTypes หลักมาต่อท้าย
+      if (!hasCurrentRole) {
+        const originalRole = accessTypes.find((r) => r.value === currentRoleId);
+        if (originalRole) {
+          options = [...options, originalRole];
+        }
+      }
+    }
+
+    return options;
+  }, [editingRecord, accessTypes]);
+
+  const [memberTypeOptions, setMemberTypeOptions] = useState<
+    { value: string; label: string }[]
+  >([]);
+  const fetchMemberTypes = useCallback(async () => {
+    try {
+      const res = await fetch(
+        `${process.env.NEXT_PUBLIC_API_BASE_URL}api/MasterData/register-types`,
+      );
+      const data = await res.json();
+
+      if (data?.status === 1 && Array.isArray(data.dataenum)) {
+        const mapped = data.dataenum.map((x: any) => ({
+          value: x.code, // PUB / ORG
+          label: x.name, // ประชาชน / หน่วยงานภายนอก
+        }));
+
+        setMemberTypeOptions([{ value: "ALL", label: "ทั้งหมด" }, ...mapped]);
+      }
+    } catch (err) {
+      console.error("fetchMemberTypes error", err);
+    }
+  }, []);
+
+  useEffect(() => {
+    if (!editingRecord || accessTypes.length === 0) return;
+
+    const roleId = editingRecord.roleId;
+
+    const isValid = accessTypes.some((r) => r.value === roleId);
+
+    form.setFieldsValue({
+      ...editingRecord,
+      roleId: isValid ? roleId : undefined,
+    });
+  }, [editingRecord, accessTypes]);
+
+  const [organizationFilter, setOrganizationFilter] = useState<string>("ALL");
+
+  const [memberTypeFilter, setMemberTypeFilter] = useState<string>("ALL");
+
+  const organizationOptions = useMemo(() => {
+    const unique = Array.from(new Set(tickets.map((t) => t.organization))).map(
+      (v) => ({ value: v, label: v }),
+    );
+
+    return [{ value: "ALL", label: "ทั้งหมด" }, ...unique];
+  }, [tickets]);
+
+  // filter
+  const filteredTickets = useMemo(() => {
+    const q = query.trim().toLowerCase();
+
+    return tickets.filter((t) => {
+      const matchMemberType =
+        memberTypeFilter === "ALL" || t.memberTypeCode === memberTypeFilter;
+
+      const matchOrganization =
+        memberTypeFilter === "PUB"
+          ? true
+          : organizationFilter === "ALL" ||
+            t.organization === organizationFilter;
+
+      const matchAccess =
+        accessFilter === "ALL" ||
+        (accessFilter === "HAS_ROLE" && t.roleId) ||
+        (accessFilter === "NO_ROLE" && !t.roleId);
+
+      const matchQuery =
+        !q || `${t.fname} ${t.lname} ${t.email}`.toLowerCase().includes(q);
+
+      return matchMemberType && matchOrganization && matchAccess && matchQuery;
+    });
+  }, [tickets, organizationFilter, memberTypeFilter, accessFilter, query]);
+
+  const isOrgDisabled = memberTypeFilter === "PUB";
+  useEffect(() => {
+    if (memberTypeFilter === "PUB") {
+      setOrganizationFilter("ALL");
+    }
+  }, [memberTypeFilter]);
+
+  const fetchListData = async () => {
+    try {
+      const res = await fetch(
+        `${process.env.NEXT_PUBLIC_API_BASE_URL}api/ManageRegisterMember/list`,
+      );
+      const data = await res.json();
+      console.log("data", data);
+
+      if (data.status === 1 && Array.isArray(data.dataenum)) {
+        // map API data to Ticket[]
+        // const mapped = data.dataenum.map((item: Ticket, idx: number) => ({
+        //   id: item.id ?? idx + 1,
+        //   fname: item.fname ?? '-',
+        //   lname: item.lname ?? '-',
+        //   email: item.email ?? '-',
+        //   memberType: item.memberType ?? '-',
+        //   organization: item.organization ?? '-',
+        //   memberID: item.memberID ?? '-',
+        //   access: item.access ?? 'user',
+        // }));
+        // setTickets(mapped);
+        setTickets(data.dataenum);
+      }
+
+      console.log("res form api", res);
+      console.log("data json", data);
+    } catch (e) {
+      console.log(e);
+    }
+  };
+
+  const fetchById = async (id: number) => {
+    const res = await fetch(
+      `${process.env.NEXT_PUBLIC_API_BASE_URL}api/ManageRegisterMember/${id}`,
+      { cache: "no-store" },
+    );
+
+    const data = await res.json();
+
+    if (data.status !== 1) {
+      throw new Error(data.message || "ไม่พบข้อมูล");
+    }
+
+    // console.log("res form api", res);
+    // console.log("data json", data);
+    return data.dataenum;
+  };
+
+  useEffect(() => {
+    fetchListData();
+    fetchAccessType();
+    fetchMemberTypes();
+  }, []);
+
+  const formatDateTime = (value?: string) => {
+    if (!value) return "-";
+
+    return new Date(value).toLocaleString("th-TH", {
+      dateStyle: "short",
+      timeStyle: "short",
+    });
+  };
+
+  // column
+  const columns: ColumnsType<Ticket> = [
+    {
+      title: "ลำดับ",
+      width: 70,
+      align: "center",
+      render: (_: any, __: Ticket, index: number) => index + 1,
+    },
+    {
+      title: "ชื่อ - นามสกุล",
+      sorter: (a, b) => {
+        const isThai = (str: string) => /[ก-๙]/.test(str);
+
+        const nameA = `${a.fname ?? ""} ${a.lname ?? ""}`;
+        const nameB = `${b.fname ?? ""} ${b.lname ?? ""}`;
+
+        if (isThai(nameA) && !isThai(nameB)) return -1;
+        if (!isThai(nameA) && isThai(nameB)) return 1;
+
+        return nameA.localeCompare(nameB, ["th", "en"], {
+          sensitivity: "base",
+        });
+      },
+      render: (_, r) => `${r.fname} ${r.lname}`,
+    },
+    { title: "Email", dataIndex: "email" },
+    { title: "ประเภทสมาชิก", dataIndex: "memberTypeName", align: "center" },
+    { title: "หน่วยงาน", dataIndex: "organization", align: "center" },
+        {
+          title: "สิทธิ์การเข้าถึง",
+          dataIndex: "roleName",
+          render: (_, r) =>
+            r.roleName ? (
+              <Tag id="textRole" color="blue">{r.roleName}</Tag>
+        ) : (
+          <Tag id="textRole" color="red">ยังไม่ได้กำหนดสิทธิ์</Tag>
+        ),
+    },
+    {
+      title: "เข้าใช้งานล่าสุด",
+      dataIndex: "lastLogin",
+      align: "center",
+      render: formatDateTime,
+    },
+    {
+      title: "จัดการ",
+      align: "center",
+      render: (_, record) => (
+        <Space>
+          <Button
+          id="view"
+            type="text"
+            shape="square"
+            icon={<EyeOutlined />}
+            onClick={async () => {
+              try {
+                const data = await fetchById(record.id);
+                setViewForm(data);
+                setOpenView(true);
+              } catch (err) {
+                console.error(err);
+              }
+            }}
+          ></Button>
+
+          <Button
+          id="edit"
+            type="text"
+            shape="square"
+            icon={<UserOutlined />}
+            onClick={async () => {
+              try {
+                const data = await fetchById(record.id);
+
+                setEditingRecord({
+                  ...data,
+                  roleId: data.roleId ? Number(data.roleId) : undefined,
+                });
+              } catch (err) {
+                console.error(err);
+              }
+            }}
+          >
+            แก้ไขข้อมูล
+          </Button>
+        </Space>
+      ),
+    },
+  ];
+
+  const handleSave = async (values: Partial<Ticket>) => {
+    if (!editingRecord) return;
+
+    if (!values.roleId) return;
+
+    setSaving(true);
+
+    try {
+      const res = await fetch(
+        `${process.env.NEXT_PUBLIC_API_BASE_URL}api/ManageRegisterMember/${editingRecord.id}`,
+        {
+          method: "PUT",
+          headers: {
+            Authorization: `Bearer ${token}`,
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({
+            access: values.roleId,
+          }),
+        },
+      );
+
+      const data = await res.json();
+
+      if (data.status !== 1) {
+        throw new Error(data.message);
+      }
+
+      await fetchListData();
+      form.resetFields();
+      // Swal.fire({
+      //   title: "บันทึกสำเร็จ",
+      //   icon: "success",
+      //   showConfirmButton: true,
+      // });
+      Swalhandle(1);
+      setEditingRecord(null);
+    } catch (err) {
+      console.error(err);
+      // Swal.fire({ title: "เกิดข้อผิดพลาดในบันทึกข้อมูล", icon: "error" });
+      Swalhandle(0);
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  return (
+    <div className="mx-auto w-full max-w-7xl px-4 py-6">
+      <Breadcrumb
+        items={[
+          { title: <Link href="/main">หน้าหลัก</Link> },
+          { title: <Link href="/manage">การจัดการ (Management)</Link> },
+          {
+            title: (
+              <Link href="/manage/registered-members">
+                จัดการสมาชิกผู้ลงทะเบียน
+              </Link>
+            ),
+          },
+        ]}
+      />
+
+      <div className="mb-4 flex flex-col gap-2 sm:flex-row sm:items-end sm:justify-between">
+        <div>
+          <h1 className="text-2xl font-extrabold text-black/85">
+            จัดการสมาชิกผู้ลงทะเบียน
+          </h1>
+          <Typography.Paragraph className="mb-0! text-[13px] text-black/55">
+            ผู้ลงทะเบียน และดูรายละเอียด
+          </Typography.Paragraph>
+        </div>
+      </div>
+
+      {/* fromแก้ไข้ซ่อนไว้ */}
+      {editingRecord && (
+        <div ref={formRef}>
+          <div className="bg-linear-to-r from-violet-600/15 via-sky-400/10 to-transparent px-5 py-3 rounded-t-2xl">
+            <Tag color="blue" className="mb-2">
+              กำลังแก้ไข: {editingRecord.fname + " " + editingRecord.lname}
+            </Tag>
+          </div>
+
+          <div className="bg-white p-6 rounded-b-xl shadow mb-4">
+            <Form form={form} layout="vertical" onFinish={handleSave}>
+              <Form.Item
+                name="fname"
+                label="ชื่อ"
+                //rules={[{ required: true, message: "กรุณากรอกชื่อ" }]}
+              >
+                <Input disabled />
+              </Form.Item>
+
+              <Form.Item
+                name="lname"
+                label="นามสกุล"
+                //rules={[{ required: true, message: "กรุณากรอกนามสกุล" }]}
+              >
+                <Input disabled />
+              </Form.Item>
+
+              <Form.Item
+                name="email"
+                label="Email"
+                // rules={
+                //   [
+                //     { required: true, message: "กรุณากรอก Email" },
+                //     { type: "email", message: "รูปแบบ Email ไม่ถูกต้อง" },
+                //     {validator: validateEmailUnique(tickets, editingRecord),},
+                //   ]
+                // }
+              >
+                <Input disabled />
+              </Form.Item>
+
+              <Form.Item name="memberTypeName" label="ประเภทสมาชิก">
+                <Input disabled />
+              </Form.Item>
+
+              <Form.Item
+                name="organization"
+                label="หน่วยงาน"
+                // rules={[{ required: true }]}
+              >
+                <Select disabled />
+              </Form.Item>
+
+              <Form.Item
+                name="roleId"
+                label="สิทธิ์การเข้าถึง"
+                rules={[
+                  { required: true, message: "กรุณาเลือกสิทธิ์การเข้าถึง" },
+                ]}
+              >
+                <Select showSearch 
+                filterOption={(input, option) =>
+                  (option?.label ?? "").toLowerCase().includes(input.toLowerCase())
+                }
+                options={filteredAccessTypes} />
+              </Form.Item>
+
+              <Form.Item label="เข้าใช้งานล่าสุด">
+                <Input
+                  value={formatDateTime(editingRecord.lastLogin)}
+                  disabled
+                />
+              </Form.Item>
+
+              {/* <Form.Item label="API Token Key">
+                <Space.Compact style={{ width: "100%" }}>
+                  <Input value={editingRecord?.token || "-"} disabled />
+                  <Button onClick={handleToken}>Generate</Button>
+                </Space.Compact>
+              </Form.Item>
+
+              <Form.Item label="รูปผู้ลงทะเบียน">
+                <Button>View</Button>
+              </Form.Item> */}
+
+              <Form.Item>
+                <div className="flex justify-end gap-1">
+                  <Button
+                    loading={saving}
+                    htmlType="submit"
+                    className="submit-btn text-white!"
+                  >
+                    บันทึก
+                  </Button>
+                  <Button
+                    className="cancel-btn text-white!"
+                    onClick={() => {
+                      setEditingRecord(null);
+                      form.resetFields();
+                    }}
+                  >
+                    ยกเลิก
+                  </Button>
+                </div>
+              </Form.Item>
+            </Form>
+          </div>
+        </div>
+      )}
+
+      {noAccessCount > 0 && (
+        <Alert
+          type="warning"
+          showIcon
+          className="p-2! mb-4!"
+          description={
+            <div className="flex items-center gap-3 flex-wrap">
+              <span>พบผู้ใช้ใหม่ที่ยังไม่ได้กำหนดสิทธิ์</span>
+
+              <Badge count={noAccessCount} />
+
+              <Button
+                size="small"
+                danger
+                onClick={() => setAccessFilter("NO_ROLE")}
+              >
+                ดูรายการ
+              </Button>
+            </div>
+          }
+        />
+      )}
+
+      <DataTable
+        className="dashboard-table"
+        headerWrapperClassName="bg-linear-to-r from-violet-600/15 via-sky-400/10 to-transparent px-5 py-3"
+        rowKey="id"
+        searchPlaceholder="ค้นหาชื่อและEmail"
+        columns={columns}
+        dataSource={filteredTickets}
+        showSearch={false}
+        onSearch={setQuery}
+        pagination={{
+          showSizeChanger: true,
+        }}
+        headerTitle={
+          <div className="flex justify-between items-start w-full flex-wrap">
+            {/* ซ้าย = title */}
+            <div>
+              <div className="text-[14px] font-semibold text-black/85">
+                รายการผู้ลงทะเบียน
+              </div>
+              <div className="text-[12px] text-black/55">
+                ติดตามสถานะผู้ลงทะเบียน และดูรายละเอียด
+              </div>
+            </div>
+
+            {/* 🔹 ขวาบนสุด = search */}
+            <Input.Search
+              placeholder="ค้นหาชื่อและ Email"
+              value={query}
+              onChange={(e) => setQuery(e.target.value)}
+              style={{ width: 250 }}
+              allowClear
+            />
+          </div>
+        }
+        rightContent={
+          <div className="flex items-center justify-end gap-2 w-full flex-wrap">
+            {/* filter */}
+            <div className="flex flex-wrap items-center gap-2">
+              <div className="text-[12px] font-semibold text-black/70">
+                สิทธิ์การเข้าถึง:
+              </div>
+              <Select
+                style={{ width: 200 }}
+                value={accessFilter}
+                options={accessOptions}
+                onChange={(v) => setAccessFilter(v)}
+              />
+            </div>
+            <div className="flex flex-wrap items-center gap-2">
+              <div className="text-[12px] font-semibold text-black/70">
+                หน่วยงาน:
+              </div>
+              <Select
+                style={{ width: 200 }}
+                value={organizationFilter}
+                options={organizationOptions}
+                onChange={(v) => setOrganizationFilter(v)}
+                disabled={isOrgDisabled}
+              />
+            </div>
+            <div className="flex flex-wrap items-center gap-2">
+              <div className="text-[12px] font-semibold text-black/70">
+                ประเภทสมาชิก:
+              </div>
+              <Select
+                style={{ width: 200 }}
+                value={memberTypeFilter}
+                options={memberTypeOptions}
+                onChange={(v) => setMemberTypeFilter(v)}
+              />
+            </div>
+
+            <Button
+              className=" text-white! clean-btn"
+              onClick={() => {
+                setOrganizationFilter("ALL");
+                setMemberTypeFilter("ALL");
+                setQuery("");
+                setAccessFilter("ALL");
+              }}
+            >
+              ล้างตัวกรอง
+            </Button>
+          </div>
+        }
+        rowClassName={(record) => (!record.roleId ? "bg-red-50" : "")}
+      />
+
+      <Modal
+        title="รายละเอียดผู้ลงทะเบียน"
+        open={openView}
+        onCancel={() => {
+          setOpenView(false);
+          setViewForm(null);
+        }}
+        footer={null}
+      >
+        {viewForm && (
+          <Form layout="vertical">
+            <Form.Item label="ชื่อ - นามสกุล">
+              <Input
+                value={`${viewForm?.fname ?? ""} ${viewForm?.lname ?? ""}`}
+                disabled
+              />
+            </Form.Item>
+
+            <Form.Item label="Email">
+              <Input value={viewForm.email} disabled />
+            </Form.Item>
+
+            <Form.Item label="ประเภทสมาชิก">
+              <Input value={viewForm.memberTypeName} disabled />
+            </Form.Item>
+
+            <Form.Item label="หน่วยงาน">
+              <Input value={viewForm.organization} disabled />
+            </Form.Item>
+
+            <Form.Item id="roleId" label="สิทธิ์การเข้าถึง">
+              <Input id="inputViewRole" value={viewForm.roleName} disabled />
+            </Form.Item>
+
+            <Form.Item label="เข้าใช้งานล่าสุด	">
+              <Input value={formatDateTime(viewForm.lastLogin)} disabled />
+            </Form.Item>
+
+            {/* <Form.Item label="API Token Key">
+              <Input value={viewForm.token || "-"} disabled />
+            </Form.Item>
+
+            <Form.Item label="รูปผู้ลงทะเบียน">
+              <Button>View</Button>
+            </Form.Item> */}
+          </Form>
+        )}
+      </Modal>
+    </div>
+  );
+}

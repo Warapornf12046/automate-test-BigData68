@@ -4,9 +4,9 @@ import { logout } from "../share/logout.spec";
 import { randomText } from "../share/randomText";
 
 const ENTITY_TYPE_OPTIONS = [
-  { value: "reportDataGroup", label: "ชื่อกลุ่มข้อมูลรายงาน" },
-  { value: "reportGroup", label: "ชื่อกลุ่มรายงาน" },
-  { value: "reportDataset", label: "ชื่อชุดข้อมูลรายงาน" },
+  { value: "reportDataGroup", label: "กลุ่มข้อมูลรายงาน" },
+  { value: "reportGroup", label: "กลุ่มรายงาน" },
+  { value: "reportDataset", label: "ชุดข้อมูลรายงาน" },
 ] as const;
 
 
@@ -121,19 +121,19 @@ async function submitCustomDataset(page: Page, entityLabel: string) {
   });
 }
 
- 
+
 
 async function updateCustomName(page: Page, customName: string) {
   const customNameInput = page.locator("#editName");
-  
+
   await expect(customNameInput).toBeVisible({ timeout: 10000 });
-  
+
   await customNameInput.fill(customName); // กรอกข้อมูลใหม่ที่ต้องการ
 }
 
 export async function searchReportAndClickEdit(page: Page, name: string) {
   const searchInput = page.locator("input[placeholder='ค้นหาชื่อกลุ่มข้อมูล']");
-  
+
   await expect(searchInput).toBeVisible({ timeout: 10000 });
 
   await searchInput.click();
@@ -175,46 +175,47 @@ test.describe("manage dataset", () => {
   test.afterEach(async ({ page }) => {
     await logout(page);
   });
+  //testที่ละอัน
 
-  test("เลือกชนิดกลุ่มข้อมูล - ชื่อกลุ่มข้อมูลรายงาน", async ({ page }) => {
+  test("เพิ่มกลุ่มชุดข้อมูลโดยเลือกชนิดกลุ่มข้อมูล - กลุ่มข้อมูลรายงาน", async ({ page }) => {
     test.setTimeout(360000);
     await submitCustomDataset(page, ENTITY_TYPE_OPTIONS[0].label);
   });
 
-  // test("เลือกชนิดกลุ่มข้อมูล - ชื่อกลุ่มรายงาน", async ({ page }) => {
-  //   test.setTimeout(360000);
-  //   await submitCustomDataset(page, ENTITY_TYPE_OPTIONS[1].label);
-  // });
-
-  // test("เลือกชนิดกลุ่มข้อมูล - ชื่อชุดข้อมูลรายงาน", async ({ page }) => {
-  //   test.setTimeout(360000);
-  //   await submitCustomDataset(page, ENTITY_TYPE_OPTIONS[2].label);
-  // });
-
-   
-
-  test("Scenario Update Report Data Group", async ({ page }) => {
-  test.setTimeout(180000); 
-
-  const reportNamePrefix = "test222"; // กำหนดชื่อกลุ่มข้อมูลรายงานที่ต้องการค้นหา
-  const updatedReportName = `${reportNamePrefix}-${randomText(8)}`; // สร้างชื่อใหม่
-
-  // 1. ค้นหาชื่อจากฟิลด์ค้นหาชื่อกลุ่มข้อมูล
-  await searchReportAndClickEdit(page, reportNamePrefix);
-
-  // 2. แก้ไขข้อมูลในช่อง customName
-  await updateCustomName(page, updatedReportName);
-
-  // 3. คลิกปุ่ม "บันทึกการแก้ไข"
-  await page.getByRole("button", { name: "บันทึกการแก้ไข" }).click();
-
-  // 4. รอข้อความ "บันทึกข้อมูลเสร็จสิ้น"
-  await expect(page.getByText("บันทึกข้อมูลเสร็จสิ้น")).toBeVisible({
-    timeout: 30000,
+  test("เลือกชนิดกลุ่มข้อมูล - กลุ่มรายงาน", async ({ page }) => {
+    test.setTimeout(360000);
+    await submitCustomDataset(page, ENTITY_TYPE_OPTIONS[1].label);
   });
 
-  console.log(`ข้อมูลได้รับการอัปเดตเรียบร้อยแล้ว: ${updatedReportName}`);
-});
+  test("เลือกชนิดกลุ่มข้อมูล - ชุดข้อมูลรายงาน", async ({ page }) => {
+    test.setTimeout(360000);
+    await submitCustomDataset(page, ENTITY_TYPE_OPTIONS[2].label);
+  });
 
-  
+
+
+  test("Scenario Update Report Data Group", async ({ page }) => {
+    test.setTimeout(400000);
+
+    const reportNamePrefix = "test222"; // กำหนดชื่อกลุ่มข้อมูลรายงานที่ต้องการค้นหา
+    const updatedReportName = `${reportNamePrefix}-${randomText(8)}`; // สร้างชื่อใหม่
+
+    // 1. ค้นหาชื่อจากฟิลด์ค้นหาชื่อกลุ่มข้อมูล
+    await searchReportAndClickEdit(page, reportNamePrefix);
+
+    // 2. แก้ไขข้อมูลในช่อง customName
+    await updateCustomName(page, updatedReportName);
+
+    // 3. คลิกปุ่ม "บันทึกการแก้ไข"
+    await page.getByRole("button", { name: "บันทึกการแก้ไข" }).click();
+
+    // 4. รอข้อความ "บันทึกข้อมูลเสร็จสิ้น"
+    await expect(page.getByText("บันทึกข้อมูลเสร็จสิ้น")).toBeVisible({
+      timeout: 30000,
+    });
+
+    console.log(`ข้อมูลได้รับการอัปเดตเรียบร้อยแล้ว: ${updatedReportName}`);
+  });
+
+
 });
