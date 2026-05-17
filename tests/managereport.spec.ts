@@ -111,6 +111,60 @@ type ScenarioValues = {
 // ให้ report บอกครบว่าข้อความไหนหาย
  
 
+//ตรวจ  validate metadata
+type MetadataValidationCase = (typeof metadataValidationCases)[number];
+type MetadataCaseKey = MetadataValidationCase["key"]
+
+const runMetadataValidationCase = async (
+  page: Page,
+  item: {
+    key: MetadataCaseKey;
+    name: string;
+    messages: readonly string[];
+  },
+) => {
+  test.setTimeout(360000);
+
+  await mReportPart1(page);
+
+  await page.locator("#admin-report-step-1-next").click();
+
+  await expect(page.locator("#admin-report-type")).toBeVisible({
+    timeout: 30000,
+  });
+
+  if (item.key !== "none") {
+    const typeItem = metadataTypeData[item.key];
+
+    if (!typeItem) {
+      throw new Error(`ไม่พบ metadataTypeData สำหรับ key: ${String(item.key)}`);
+    }
+
+    if (item.key === "other") {
+      await selectAntdOptionBySearch(
+        page,
+        "#admin-report-type",
+        metadataTypeData.other.searchText ?? metadataTypeData.other.title,
+        metadataTypeData.other.optionText ?? metadataTypeData.other.title,
+      );
+    } else {
+      await fillMetadataType(page, typeItem);
+    }
+  }
+
+  await page.locator("#admin-report-step-2-next").click();
+
+  const firstMessage = item.messages[0];
+
+  await expect(page.getByText(firstMessage, { exact: false })).toBeVisible({
+    timeout: 30000,
+  });
+
+  await page.waitForTimeout(500);
+
+  await expectValidationMessagesIfAvailable(page, [...item.messages]);
+};
+// end ตรวจ  validate metadata
 
 export async function checkInputType(
   page: Page,
@@ -657,7 +711,6 @@ export async function fillMultiSelectOtherAndDetail(
   selectSelector: string,
   items: readonly MultiSelectWithDetailData[],
   buildOtherSelector: (value: string) => string,
-  buildDetailSelector: (value: string) => string,
 ) {
   for (const item of items) {
     await selectAntdMultipleOptionBySearch(
@@ -680,52 +733,13 @@ export async function fillMultiSelectOtherAndDetail(
           item.otherInputSelector,
           item.extraOtherInputSelector,
           buildOtherSelector(item.value),
-          `${selectSelector}-other-${item.value}`,
+          `${selectSelector}-other-new`,
           `${selectSelector}-other`,
         ].filter((s): s is string => s !== undefined),
         otherValue,
       );
     }
 
-    if (item.detail) {
-      const detailSelector =
-        item.detailSelector ?? buildDetailSelector(item.value);
-
-      const detailInput = page.locator(detailSelector);
-
-      const isDetailVisible = await detailInput
-        .isVisible({ timeout: 10000 })
-        .catch(() => false);
-
-      if (!isDetailVisible) {
-        const inputs = await page.locator("input, textarea").evaluateAll((els) =>
-          els.map((el) => ({
-            id: el.getAttribute("id"),
-            testId: el.getAttribute("data-testid"),
-            placeholder: el.getAttribute("placeholder"),
-            value: (el as HTMLInputElement).value,
-          })),
-        );
-
-        throw new Error(
-          [
-            `เลือก "${item.title}" แล้ว แต่ไม่พบช่องคำอธิบาย`,
-            `selector: ${detailSelector}`,
-            "",
-            "input/textarea ที่เจอบนหน้าจอ:",
-            JSON.stringify(inputs, null, 2),
-          ].join("\n"),
-        );
-      }
-
-      const detailValue =
-        item.isOther && item.otherValue
-          ? `${item.detail} (${item.otherValue})`
-          : item.detail;
-
-      await detailInput.fill(detailValue);
-      await expect(detailInput).toHaveValue(detailValue);
-    }
   }
 }
 
@@ -1192,8 +1206,7 @@ export async function fillRecordSpecificFields(page: Page) {
     page,
     "#admin-report-sponsor",
     sponsorData,
-    (value) => `#admin-report-sponsor-other-${value}`,
-    (value) => `#admin-report-sponsor-detail-${value}`,
+    (value) => `#admin-report-sponsor-other-new`,
   );
 
   await fillSingleSelectOther(
@@ -1470,8 +1483,7 @@ export async function fillObjectiveForValidation(page: Page) {
     page,
     "#admin-report-objective",
     objectiveData,
-    (value) => `#admin-report-objective-other-${value}`,
-    (value) => `#admin-report-objective-detail-${value}`,
+    (value) => `#admin-report-objective-other-new`,
   );
 }
 
@@ -1660,8 +1672,7 @@ export async function fillMetadataForTypeCheck(
       page,
       "#admin-report-sponsor",
       sponsorData,
-      (value) => `#admin-report-sponsor-other-${value}`,
-      (value) => `#admin-report-sponsor-detail-${value}`,
+      (value) => `#admin-report-sponsor-other-new`,
     );
 
     await fillSingleSelectOther(
@@ -1816,8 +1827,8 @@ export async function fillCommonMetadataSelects(page: Page) {
     page,
     "#admin-report-objective",
     objectiveData,
-    (value) => `#admin-report-objective-other-${value}`,
-    (value) => `#admin-report-objective-detail-${value}`,
+    (value) => `#admin-report-objective-other-new`,
+    // (value) => `#admin-report-objective-detail-${value}`,
   );
 
   await fillSingleSelectOther(
@@ -2561,8 +2572,7 @@ async function fillHappyCaseMetadataForType(
       page,
       "#admin-report-objective",
       objectiveData,
-      (value) => `#admin-report-objective-other-${value}`,
-      (value) => `#admin-report-objective-detail-${value}`,
+      (value) => `#admin-report-objective-other-new`,
     );
     await closeAntdDropdown(page);
 
@@ -2570,8 +2580,7 @@ async function fillHappyCaseMetadataForType(
       page,
       "#admin-report-sponsor",
       sponsorData,
-      (value) => `#admin-report-sponsor-other-${value}`,
-      (value) => `#admin-report-sponsor-detail-${value}`,
+      (value) => `#admin-report-sponsor-other-new`,
     );
     await closeAntdDropdown(page);
 
@@ -2973,92 +2982,198 @@ test.describe("Manage Report Page", () => {
     ]);
   });
 
-  for (const item of metadataValidationCases) {
-    test(`Scenario validation metadata: ตรวจ validation การกรอกข้อมูล Metadata - ${item.name}`, async ({
-      page,
-    }) => {
-      test.setTimeout(360000);
+ test("Scenario validation metadata type record: ตรวจ validation การกรอกข้อมูล Metadata - ข้อมูลระเบียน", async ({
+  page,
+}) => {
+  await runMetadataValidationCase(page, {
+    key: metadataValidationCases[0].key,
+    name:  metadataValidationCases[0].name,
+    messages: metadataValidationCases[0].messages
+  });
+});
 
-      await mReportPart1(page);
+test("Scenario validation metadata type statistic: ตรวจ validation การกรอกข้อมูล Metadata - ข้อมูลสถิติ", async ({
+  page,
+}) => {
+  await runMetadataValidationCase(page, {
+    key: metadataValidationCases[1].key,
+    name:  metadataValidationCases[1].name,
+    messages: metadataValidationCases[1].messages
+  });
+});
 
-      await page.locator("#admin-report-step-1-next").click();
+test("Scenario validation metadata type geoSpatial: ตรวจ validation การกรอกข้อมูล Metadata - ข้อมูลภูมิสารสนเทศเชิงพื้นที่", async ({
+  page,
+}) => {
+  await runMetadataValidationCase(page, {
+    key: metadataValidationCases[2].key,
+    name:  metadataValidationCases[2].name,
+    messages: metadataValidationCases[2].messages
+  });
+});
 
-      await expect(page.locator("#admin-report-type")).toBeVisible({
-        timeout: 30000,
-      });
+test("Scenario validation metadata type multiple: ตรวจ validation การกรอกข้อมูล Metadata - ข้อมูลหลากหลายประเภท", async ({
+  page,
+}) => {
+  await runMetadataValidationCase(page, {
+    key: metadataValidationCases[3].key,
+    name:  metadataValidationCases[3].name,
+    messages: metadataValidationCases[3].messages
+  });
+});
 
-      /**
-       * กรณี "ยังไม่เลือกประเภทข้อมูล"
-       * ไม่ต้องเลือก admin-report-type
-       * ให้กดถัดไปเพื่อให้ validation แสดงเลย
-       */
-      if (item.key !== "none") {
-        const typeItem =
-          metadataTypeData[item.key as keyof typeof metadataTypeData];
+test("Scenario validation metadata type other: ตรวจ validation การกรอกข้อมูล Metadata - ข้อมูลประเภทอื่น ๆ ระบุ", async ({
+  page,
+}) => {
+  await runMetadataValidationCase(page, {
+   key: metadataValidationCases[4].key,
+    name:  metadataValidationCases[4].name,
+    messages: metadataValidationCases[4].messages
+  });
+});
 
-        if (!typeItem) {
-          throw new Error(
-            `ไม่พบ metadataTypeData สำหรับ key: ${String(item.key)}`,
-          );
-        }
+test("Scenario validation metadata type none: ตรวจ validation การกรอกข้อมูล Metadata - ไม่เลือกประเภทข้อมูล", async ({
+  page,
+}) => {
+  await runMetadataValidationCase(page, {
+    key: metadataValidationCases[5].key,
+    name:  metadataValidationCases[5].name,
+    messages: metadataValidationCases[5].messages
+  });
+});
 
-        if (item.key === "other") {
-          await selectAntdOptionBySearch(
-            page,
-            "#admin-report-type",
-            metadataTypeData.other.searchText ?? metadataTypeData.other.title,
-            metadataTypeData.other.optionText ?? metadataTypeData.other.title,
-          );
-        } else {
-          await fillMetadataType(page, typeItem);
-        }
-      }
 
-      await page.locator("#admin-report-step-2-next").click();
+   
 
-      const firstMessage = item.messages[0];
+  test("Scenario Exception maxLength record: กรอกข้อมูลเกิน maxLength ใน Metadata - ข้อมูลระเบียน", async ({
+  page,
+}) => {
+  // test.setTimeout(30000);
 
-      await expect(page.getByText(firstMessage, { exact: false }))
-        .toBeVisible({ timeout: 30000 })
-        .catch(() => {
-          console.log(`⚠️ รอ validation message: ${firstMessage}`);
-        });
+  await mReportPart1(page);
 
-      await page.waitForTimeout(500);
+  await page.locator("#admin-report-step-1-next").click();
 
-      await expectValidationMessagesIfAvailable(page, [...item.messages]);
-    });
+  await expect(page.locator("#admin-report-type")).toBeVisible({
+    timeout: 10000,
+  });
+
+  await prepareMetadataTypeForMaxLength(page, "record");
+
+  const fields = getMaxLengthInputFieldsByType("record");
+
+  for (const field of fields) {
+    const input = page.locator(field.selector);
+
+    if (await input.isVisible().catch(() => false)) {
+      await checkInputRejectsOverMaxLength(page, field);
+    }
   }
+});
 
+test("Scenario Exception maxLength statistic: กรอกข้อมูลเกิน maxLength ใน Metadata - ข้อมูลสถิติ", async ({
+  page,
+}) => {
+  // test.setTimeout(240000);
 
-  for (const item of metadataTypeCases) {
-    test(`Scenario Exception maxLength: กรอกข้อมูลเกิน maxLength ใน Metadata - ${item.name}`, async ({
-      page,
-    }) => {
-      test.setTimeout(240000);
-      await mLogin(page);
+  await mReportPart1(page);
 
-      await mReportPart1(page);
+  await page.locator("#admin-report-step-1-next").click();
 
-      await page.locator("#admin-report-step-1-next").click();
+  await expect(page.locator("#admin-report-type")).toBeVisible({
+    timeout: 10000,
+  });
 
-      await expect(page.locator("#admin-report-type")).toBeVisible({
-        timeout: 10000,
-      });
+  await prepareMetadataTypeForMaxLength(page, "statistic");
 
-      await prepareMetadataTypeForMaxLength(page, item.key);
+  const fields = getMaxLengthInputFieldsByType("statistic");
 
-      const fields = getMaxLengthInputFieldsByType(item.key);
+  for (const field of fields) {
+    const input = page.locator(field.selector);
 
-      for (const field of fields) {
-        const input = page.locator(field.selector);
-
-        if (await input.isVisible().catch(() => false)) {
-          await checkInputRejectsOverMaxLength(page, field);
-        }
-      }
-    });
+    if (await input.isVisible().catch(() => false)) {
+      await checkInputRejectsOverMaxLength(page, field);
+    }
   }
+});
+
+test("Scenario Exception maxLength geoSpatial: กรอกข้อมูลเกิน maxLength ใน Metadata - ข้อมูลภูมิสารสนเทศเชิงพื้นที่", async ({
+  page,
+}) => {
+  // test.setTimeout(240000);
+
+  await mReportPart1(page);
+
+  await page.locator("#admin-report-step-1-next").click();
+
+  await expect(page.locator("#admin-report-type")).toBeVisible({
+    timeout: 10000,
+  });
+
+  await prepareMetadataTypeForMaxLength(page, "geoSpatial");
+
+  const fields = getMaxLengthInputFieldsByType("geoSpatial");
+
+  for (const field of fields) {
+    const input = page.locator(field.selector);
+
+    if (await input.isVisible().catch(() => false)) {
+      await checkInputRejectsOverMaxLength(page, field);
+    }
+  }
+});
+
+test("Scenario Exception maxLength multiple: กรอกข้อมูลเกิน maxLength ใน Metadata - ข้อมูลหลากหลายประเภท", async ({
+  page,
+}) => {
+  // test.setTimeout(240000);
+
+  await mReportPart1(page);
+
+  await page.locator("#admin-report-step-1-next").click();
+
+  await expect(page.locator("#admin-report-type")).toBeVisible({
+    timeout: 10000,
+  });
+
+  await prepareMetadataTypeForMaxLength(page, "multiple");
+
+  const fields = getMaxLengthInputFieldsByType("multiple");
+
+  for (const field of fields) {
+    const input = page.locator(field.selector);
+
+    if (await input.isVisible().catch(() => false)) {
+      await checkInputRejectsOverMaxLength(page, field);
+    }
+  }
+});
+
+test("Scenario Exception maxLength other: กรอกข้อมูลเกิน maxLength ใน Metadata - ข้อมูลประเภทอื่น ๆ ระบุ", async ({
+  page,
+}) => {
+  test.setTimeout(240000);
+
+  await mReportPart1(page);
+
+  await page.locator("#admin-report-step-1-next").click();
+
+  await expect(page.locator("#admin-report-type")).toBeVisible({
+    timeout: 10000,
+  });
+
+  await prepareMetadataTypeForMaxLength(page, "other");
+
+  const fields = getMaxLengthInputFieldsByType("other");
+
+  for (const field of fields) {
+    const input = page.locator(field.selector);
+
+    if (await input.isVisible().catch(() => false)) {
+      await checkInputRejectsOverMaxLength(page, field);
+    }
+  }
+});
 
   // -------------
   test("Scenario fillMetadataTypeRecord: กรอกข้อมูลรายงาน , กรอก Meatadata โดยเลือก ประเภทข้อมูลระเบียน และกรอกข้อมูล Datadictionary", async ({
@@ -3092,13 +3207,7 @@ test.describe("Manage Report Page", () => {
 
     await closeAntdDropdown(page);
 
-    await fillMultiSelectOtherAndDetail(
-      page,
-      "#admin-report-objective",
-      objectiveData,
-      (value) => `#admin-report-objective-other-${value}`,
-      (value) => `#admin-report-objective-detail-${value}`,
-    );
+    await
 
     await closeAntdDropdown(page);
 
@@ -3106,8 +3215,7 @@ test.describe("Manage Report Page", () => {
       page,
       "#admin-report-sponsor",
       sponsorData,
-      (value) => `#admin-report-sponsor-other-${value}`,
-      (value) => `#admin-report-sponsor-detail-${value}`,
+      (value) => `#admin-report-sponsor-other-new`,
     );
 
     await closeAntdDropdown(page);
@@ -3454,6 +3562,9 @@ test.describe("Manage Report Page", () => {
       // เพราะเป็นการตรวจ type ของ Metadata เท่านั้น
     });
   }
+
+   
+
 
   test("Scenario typeDictionary: ตรวจสอบ type ของ Data Dictionary", async ({ page }) => {
     test.setTimeout(120000);

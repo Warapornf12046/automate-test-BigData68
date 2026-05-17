@@ -321,6 +321,7 @@ export const organizationData = {
 
 export const objectiveData = [
   {
+    selector: "##admin-report-objective",
     title: "อื่น ๆ",
     searchText: "อื่น ๆ",
     optionText: "อื่น ๆ",
@@ -329,7 +330,6 @@ export const objectiveData = [
     isOther: true,
 
     otherInputSelector: "#admin-report-objective-other-new",
-    otherInputTestId: "admin-report-objective-other-new",
     otherValue: `วัตถุประสงค์อื่น ๆ ทดสอบ ${randomText(4)}`,
   },
   {
@@ -463,6 +463,36 @@ export const licenseData = {
 // ------------------------------
 //ระเบียน
 export const recordMetadataData = {
+  record: {
+    selector: "#admin-report-type",
+    title: "ข้อมูลระเบียน",
+    searchText: "ข้อมูลระเบียน",
+    optionText: "ข้อมูลระเบียน",
+    value: "1",
+    code: "1",
+    isOther: false,
+  },
+    datasetName: {
+    selector: "#admin-report-dataset-name",
+    valuePrefix: "จำนวนกำลังแรงงานรวม",
+    maxLength: 150,
+    inputType: "string",
+  },
+
+  org:{
+    selector: "#admin-report-org",
+  title: "สำนักงานปลัดสำนักนายกรัฐมนตรี",
+  searchText: "สำนักงานปลัดสำนักนายกรัฐมนตรี",
+  optionText: "สำนักงานปลัดสำนักนายกรัฐมนตรี",
+  value: "7",
+  code: "0101",
+  isOther: false,
+
+  },
+   
+
+  
+
   // เงื่อนไขในการเข้าถึงข้อมูล
   accessCondition: {
     selector: "#admin-report-access-condition",
