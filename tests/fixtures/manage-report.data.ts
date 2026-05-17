@@ -149,7 +149,7 @@ export const metadataTypeData = {
   other: {
     selector: "#admin-report-type",
     title: "ข้อมูลประเภทอื่น ๆ ระบุ...",
-    searchText: "ข้อมูลประเภทอื่น",
+    searchText: "อื่น ๆ ระบุ",
     optionText: "ข้อมูลประเภทอื่น ๆ ระบุ",
     value: "5",
     code: "9",
@@ -291,8 +291,8 @@ export const languageData = [
   },
   {
     title: "อื่น ๆ ระบุ .........",
-    searchText: "อื่น",
-    optionText: "อื่น ๆ ระบุ",
+    searchText: "อื่น ๆ ระบุ",
+    optionText: "อื่น ๆ ระบุ .........",
     value: "157",
     code: "99",
     isOther: true,
@@ -330,7 +330,7 @@ export const objectiveData = [
     isOther: true,
 
     otherInputSelector: "#admin-report-objective-other-new",
-    otherValue: `วัตถุประสงค์อื่น ๆ ทดสอบ ${randomText(4)}`,
+    otherValue: `วัตถุประสงค์other ${randomText(4)}`,
   },
   {
     title: "ดัชนี/ตัวชี้วัดระดับ นานาชาติ",
@@ -518,30 +518,30 @@ export const recordMetadataData = {
     inputType: "string",
   },
 
-   objective: [
+  objective: [
     {
-    selector: "#admin-report-objective",
-    title: "อื่น ๆ",
-    searchText: "อื่น ๆ",
-    optionText: "อื่น ๆ",
-    value: "41",
-    code: "99",
-    isOther: true,
+      selector: "#admin-report-objective",
+      title: "อื่น ๆ",
+      searchText: "อื่น ๆ",
+      optionText: "อื่น ๆ",
+      value: "41",
+      code: "99",
+      isOther: true,
 
-    otherInputSelector: "#admin-report-objective-other-new",
-    otherValue: `วัตถุประสงค์อื่น ๆ ทดสอบ ${randomText(4)}`,
-  },
+      otherInputSelector: "#admin-report-objective-other-new",
+      otherValue: `วัตถุประสงค์other ${randomText(4)}`,
+    },
 
-  {
-    selector: "#admin-report-objective",
-    title: "ยุทธศาสตร์ชาติ",
-    searchText: "ยุทธศาสตร์ชาติ",
-    optionText: "ยุทธศาสตร์ชาติ",
-    value: "28",
-    code: "1",
-    isOther: false,
-  }
-  ] ,
+    {
+      selector: "#admin-report-objective",
+      title: "ยุทธศาสตร์ชาติ",
+      searchText: "ยุทธศาสตร์ชาติ",
+      optionText: "ยุทธศาสตร์ชาติ",
+      value: "28",
+      code: "1",
+      isOther: false,
+    }
+  ],
 
   updateFrequencyUnit: {
     selector: "#admin-report-freq-unit",
@@ -621,12 +621,29 @@ export const recordMetadataData = {
     inputType: "url",
   },
 
-  sponsor: {
-    selector: "#admin-report-sponsor",
-    value: `ผู้สนับสนุนหรือผู้ร่วมดำเนินการ ${randomText(5)}`,
-    maxLength: 200,
-    inputType: "string",
-  },
+  sponsor: [
+    {
+      selector: "#admin-report-sponsor",
+      title: "หน่วยงานของรัฐ",
+      searchText: "หน่วยงานของรัฐ",
+      optionText: "หน่วยงานของรัฐ",
+      value: "125",
+      code: "1",
+      isOther: false,
+    },
+    {
+      selector: "#admin-report-sponsor",
+      title: "อื่น ๆ",
+      searchText: "อื่น ๆ",
+      optionText: "อื่น ๆ",
+      value: "130",
+      code: "9",
+      isOther: true,
+
+      otherInputSelector: "#admin-report-sponsor-other-new",
+      otherValue: `sponsorother ${randomText(4)}`,
+    }
+  ],
 
   smallestUnit: {
     selector: "#admin-report-smallest-unit",
@@ -725,30 +742,31 @@ export const statisticMetadataData = {
   },
 
   // วัตถุประสงค์
-   objective: [
+  objective: [
     {
-    selector: "#admin-report-objective",
-    title: "อื่น ๆ",
-    searchText: "อื่น ๆ",
-    optionText: "อื่น ๆ",
-    value: "41",
-    code: "99",
-    isOther: true,
+      selector: "#admin-report-objective",
+      title: "อื่น ๆ",
+      searchText: "อื่น ๆ",
+      optionText: "อื่น ๆ",
+      value: "41",
+      code: "99",
+      isOther: true,
 
-    otherInputSelector: "#admin-report-objective-other-new",
-    otherValue: `วัตถุประสงค์อื่น ๆ ทดสอบ ${randomText(4)}`,
-  },
+      otherInputSelector: "#admin-report-objective-other-new",
+      otherValue: `วัตถุประสงค์other ${randomText(4)}`,
+    },
 
-  {
-    selector: "#admin-report-objective",
-    title: "ยุทธศาสตร์ชาติ",
-    searchText: "ยุทธศาสตร์ชาติ",
-    optionText: "ยุทธศาสตร์ชาติ",
-    value: "28",
-    code: "1",
-    isOther: false,
-  }
-  ] ,
+    {
+      selector: "#admin-report-objective",
+      title: "ยุทธศาสตร์ชาติ",
+      searchText: "ยุทธศาสตร์ชาติ",
+      optionText: "ยุทธศาสตร์ชาติ",
+      value: "28",
+      code: "1",
+      isOther: false,
+    }
+  ],
+
 
   // หน่วยความถี่ของการปรับปรุงข้อมูล
   updateFrequencyUnit: {
@@ -789,15 +807,30 @@ export const statisticMetadataData = {
   },
 
   // รูปแบบการเก็บข้อมูล
-  format: {
-    selector: "#admin-report-format",
-    title: "CSV",
-    searchText: "CSV",
-    optionText: "CSV",
-    value: "1",
-    code: "1",
-    isOther: false,
-  },
+  format: [
+    {
+      selector: "#admin-report-format",
+      title: "CSV",
+      searchText: "CSV",
+      optionText: "CSV",
+      value: "1",
+      code: "1",
+      isOther: false,
+    },
+
+    {
+      selector: "#admin-report-format",
+      title: "อื่น ๆ ระบุ .....",
+      searchText: "อื่น ๆ",
+      optionText: "อื่น ๆ",
+      value: "3",
+      code: "3",
+      isOther: true,
+
+      otherInputSelector: "#admin-report-format-other-new",
+      otherValue: `รูปแบบการเก็บข้อมูลother ${randomText(4)}`,
+    }
+  ],
 
   // หมวดหมู่ข้อมูลตามธรรมาภิบาลข้อมูลภาครัฐ
   governance: {
@@ -830,27 +863,76 @@ export const statisticMetadataData = {
   },
 
   // ปีข้อมูลที่เริ่มต้นจัดทำ
-  dataStartYear: {
-    selector: "#admin-report-data-start-year",
+  startDataYearType: {
+    selector: "#admin-report-start-data-year-type",
+    title: "ระบุเฉพาะปี",
+    searchText: "ระบุเฉพาะปี",
+    optionText: "ระบุเฉพาะปี",
+    value: "YEAR",
+    code: "YEAR",
+    isOther: false,
+  },
+
+  startDataYear: {
+    selector: "#admin-report-start-data-year",
     value: "2565",
-    maxLength: 4,
-    inputType: "number",
+    pickerValue: "2022",
+    format: "BBBB",
   },
 
   // ปีข้อมูลล่าสุดที่เผยแพร่
-  dataEndYear: {
-    selector: "#admin-report-data-end-year",
-    value: "2568",
-    maxLength: 4,
-    inputType: "number",
+  latestPublishedYearType: {
+    selector: "#admin-report-latest-published-year-type",
+    title: "ระบุเฉพาะปี",
+    searchText: "ระบุเฉพาะปี",
+    optionText: "ระบุเฉพาะปี",
+    value: "YEAR",
+    code: "YEAR",
+    isOther: false,
   },
 
-  // วันที่กำหนดเผยแพร่ข้อมูล
+  latestPublishedYear: {
+    selector: "#admin-report-latest-published-year",
+    value: "2568",
+    pickerValue: "2025",
+    format: "BBBB",
+  },
+
+  publishedDateType: {
+    selector: "#admin-report-published-date-type",
+    title: "วันเวลา",
+    searchText: "วันเวลา",
+    optionText: "วันเวลา",
+    value: "DATETIME",
+    code: "DATETIME",
+    isOther: false,
+  },
+
   publishedDate: {
     selector: "#admin-report-published-date",
-    value: "2569-04-28",
-    inputType: "date",
+    value: "2569-04-28-09-00",
+    pickerValue: "2026-04-28",
+    format: "BBBB-MM-DD-HH-mm",
   },
+
+  publishedDateTypeText: {
+    selector: "#admin-report-published-date-type",
+    title: "ข้อความ",
+    searchText: "ข้อความ",
+    optionText: "ข้อความ",
+    value: "TEXT",
+    code: "TEXT",
+    isOther: false,
+  },
+
+  publishedDateText: {
+    selector: "#admin-report-published-date-text",
+    value: "ทุกวันที่ 3 ของเดือน เวลา 09.00 น.",
+    maxLength: 500,
+    inputType: "string",
+  },
+
+  // วันที่กำหนดเผยแพร่ข้อมูล end
 
   // การจัดจำแนก
   classification: {
@@ -866,9 +948,9 @@ export const statisticMetadataData = {
   classificationData: [
     {
       selector: "#admin-report-classification",
-      title: "อื่น ๆ ระบุ .........",
+      title: "อื่น ๆ",
       searchText: "อื่น",
-      optionText: "อื่น ๆ ระบุ .........",
+      optionText: "อื่น ๆ",
       value: "313",
       code: "99",
       isOther: true,
@@ -943,9 +1025,9 @@ export const statisticMetadataData = {
   languageData: [
     {
       selector: "#admin-report-language",
-      title: "อื่น ๆ ระบุ .........",
+      title: "อื่น ๆ",
       searchText: "อื่น",
-      optionText: "อื่น ๆ ระบุ .........",
+      optionText: "อื่น ๆ",
       value: "157",
       code: "99",
       isOther: true,
@@ -957,7 +1039,7 @@ export const statisticMetadataData = {
   // สถิติทางการ
   officialStatistic: {
     id: "admin-report-official-statistic",
-    checked: false,
+    checked: true,
   },
 } as const;
 
@@ -965,7 +1047,7 @@ export const statisticMetadataData = {
 // ---------------------------------
 // ภูมิสารสนเทศเชิงพื้นที่
 export const geoSpatialMetadataData = {
-    geoSpatial: {
+  geoSpatial: {
     selector: "#admin-report-type",
     title: "ข้อมูลภูมิสารสนเทศเชิงพื้นที่",
     searchText: "ภูมิสารสนเทศ",
@@ -1028,28 +1110,28 @@ export const geoSpatialMetadataData = {
   // วัตถุประสงค์
   objective: [
     {
-    selector: "#admin-report-objective",
-    title: "อื่น ๆ",
-    searchText: "อื่น ๆ",
-    optionText: "อื่น ๆ",
-    value: "41",
-    code: "99",
-    isOther: true,
+      selector: "#admin-report-objective",
+      title: "อื่น ๆ",
+      searchText: "อื่น ๆ",
+      optionText: "อื่น ๆ",
+      value: "41",
+      code: "99",
+      isOther: true,
 
-    otherInputSelector: "#admin-report-objective-other-new",
-    otherValue: `วัตถุประสงค์อื่น ๆ ทดสอบ ${randomText(4)}`,
-  },
+      otherInputSelector: "#admin-report-objective-other-new",
+      otherValue: `วัตถุประสงค์other ${randomText(4)}`,
+    },
 
-  {
-    selector: "#admin-report-objective",
-    title: "ยุทธศาสตร์ชาติ",
-    searchText: "ยุทธศาสตร์ชาติ",
-    optionText: "ยุทธศาสตร์ชาติ",
-    value: "28",
-    code: "1",
-    isOther: false,
-  }
-  ] ,
+    {
+      selector: "#admin-report-objective",
+      title: "ยุทธศาสตร์ชาติ",
+      searchText: "ยุทธศาสตร์ชาติ",
+      optionText: "ยุทธศาสตร์ชาติ",
+      value: "28",
+      code: "1",
+      isOther: false,
+    }
+  ],
 
   // หน่วยความถี่ของการปรับปรุงข้อมูล
   updateFrequencyUnit: {
@@ -1121,16 +1203,16 @@ export const geoSpatialMetadataData = {
     code: "1",
     isOther: false,
   },
-  
 
-   accessCondition: {
+
+  accessCondition: {
     selector: "#admin-report-access-condition",
     value: "ไม่มี",
     maxLength: 1000,
     inputType: "string",
   },
 
-   // ชุดข้อมูลภูมิศาสตร์
+  // ชุดข้อมูลภูมิศาสตร์
   geographicDataset: {
     selector: "#admin-report-geographic-dataset",
     title: "ข้อมูลแผนที่",
@@ -1202,33 +1284,119 @@ export const geoSpatialMetadataData = {
 
   // ความถูกต้องของตำแหน่ง
   positionalAccuracy: {
-    selector: "#admin-report-positional-accuracy",
-    value: "ความถูกต้องระดับตำบล",
+    has: {
+      selector: "#admin-report-positional-accuracy",
+      title: "มี",
+      searchText: "มี",
+      optionText: "มี",
+      value: "มี",
+      code: "Y",
+      isOther: true,
+      otherInputSelector: "#admin-report-positional-accuracy-detail",
+      otherValue: `มี ควบคุมความถูกต้องด้วย RMSEH ตามมาตรฐาน FGDS ${randomText(4)}`,
+    },
+
+    none: {
+      selector: "#admin-report-positional-accuracy",
+      title: "ไม่มี",
+      searchText: "ไม่มี",
+      optionText: "ไม่มี",
+      value: "ไม่มี",
+      code: "N",
+      isOther: false,
+    },
+  },
+
+  // เวลาอ้างอิง
+  referenceTimeType: {
+    selector: "#admin-report-reference-time-type",
+    title: "วันเวลา",
+    searchText: "วันเวลา",
+    optionText: "วันเวลา",
+    value: "DATETIME",
+    code: "DATETIME",
+    isOther: false,
+  },
+
+  referenceTime: {
+    selector: "#admin-report-reference-time",
+    value: "2568-04-28-09-00",
+    pickerValue: "2025-04-28",
+    format: "BBBB-MM-DD-HH-mm",
+  },
+
+  // วันที่กำหนดเผยแพร่ข้อมูล
+  publishedDateType: {
+    selector: "#admin-report-published-date-type-spatial",
+    title: "วันเวลา",
+    searchText: "วันเวลา",
+    optionText: "วันเวลา",
+    value: "DATETIME",
+    code: "DATETIME",
+    isOther: false,
+  },
+
+  publishedDate: {
+    selector: "#admin-report-published-date-spatial",
+    value: "2569-04-28-09-00",
+    pickerValue: "2026-04-28",
+    format: "BBBB-MM-DD-HH-mm",
+  },
+
+  publishedDateTypeText: {
+    selector: "#admin-report-published-date-type",
+    title: "ข้อความ",
+    searchText: "ข้อความ",
+    optionText: "ข้อความ",
+    value: "TEXT",
+    code: "TEXT",
+    isOther: false,
+  },
+
+  publishedDateText: {
+    selector: "#admin-report-published-date-text",
+    value: "ทุกวันที่ 3 ของเดือน เวลา 09.00 น.",
     maxLength: 500,
     inputType: "string",
   },
 
-  // เวลาอ้างอิง
-  referenceTime: {
-    selector: "#admin-report-reference-time",
-    value: "2568",
-    maxLength: 4,
-    inputType: "number",
-  },
-
-  // วันที่กำหนดเผยแพร่ข้อมูล
-  publishedDate: {
-    selector: "#admin-report-published-date",
-    value: "2569-04-28",
-    inputType: "date",
-  },
+  // วันที่กำหนดเผยแพร่ข้อมูล end
 
   // วันที่เผยแพร่ข้อมูล
-  releaseDate: {
-    selector: "#admin-report-release-date",
-    value: "2569-05-01",
-    inputType: "date",
+  dataPublishedDateType: {
+    selector: "#admin-report-data-published-date-type",
+    title: "วันเวลา",
+    searchText: "วันเวลา",
+    optionText: "วันเวลา",
+    value: "DATETIME",
+    code: "DATETIME",
+    isOther: false,
   },
+
+  dataPublishedDate: {
+    selector: "#admin-report-data-published-date",
+    value: "2569-05-01-09-00",
+    pickerValue: "2026-05-01",
+    format: "BBBB-MM-DD-HH-mm",
+  },
+
+  dataPublishedDateTextType: {
+    selector: "#admin-report-data-published-date-type",
+    title: "ข้อความ",
+    searchText: "ข้อความ",
+    optionText: "ข้อความ",
+    value: "TEXT",
+    code: "TEXT",
+    isOther: false,
+  },
+
+  dataPublishedDateText: {
+    selector: "#admin-report-data-published-date-text",
+    value: "ทุกวันที่ 3 ของเดือน เวลา 09.00 น.",
+    maxLength: 500,
+    inputType: "string",
+  },
+  // วันที่เผยแพร่ข้อมูล end
 
   // URL
   url: {
@@ -1253,7 +1421,7 @@ export const geoSpatialMetadataData = {
     {
       selector: "#admin-report-language",
       title: "อื่น ๆ ระบุ .........",
-      searchText: "อื่น",
+      searchText: "อื่น ๆ ระบุ",
       optionText: "อื่น ๆ ระบุ .........",
       value: "157",
       code: "99",
@@ -1327,193 +1495,30 @@ export const multipleMetadataData = {
   },
 
   // วัตถุประสงค์
-   objective: [
-    {
-    selector: "#admin-report-objective",
-    title: "อื่น ๆ",
-    searchText: "อื่น ๆ",
-    optionText: "อื่น ๆ",
-    value: "41",
-    code: "99",
-    isOther: true,
-
-    otherInputSelector: "#admin-report-objective-other-new",
-    otherValue: `วัตถุประสงค์อื่น ๆ ทดสอบ ${randomText(4)}`,
-  },
-
-  {
-    selector: "#admin-report-objective",
-    title: "ยุทธศาสตร์ชาติ",
-    searchText: "ยุทธศาสตร์ชาติ",
-    optionText: "ยุทธศาสตร์ชาติ",
-    value: "28",
-    code: "1",
-    isOther: false,
-  }
-  ] ,
-
-  // หน่วยความถี่ของการปรับปรุงข้อมูล
-  updateFrequencyUnit: {
-    selector: "#admin-report-freq-unit",
-    title: "ปี",
-    searchText: "ปี",
-    optionText: "ปี",
-    value: "1",
-    code: "1",
-    isOther: false,
-  },
-
-  // ค่าความถี่ของการปรับปรุงข้อมูล
-  updateFrequencyValue: {
-    selector: "#admin-report-freq-value",
-    value: "1",
-    maxLength: 10,
-    inputType: "number",
-  },
-
-  // ขอบเขตเชิงภูมิศาสตร์หรือเชิงพื้นที่
-  geoCoverage: {
-    selector: "#admin-report-geo-scope",
-    title: "ประเทศ",
-    searchText: "ประเทศ",
-    optionText: "ประเทศ",
-    value: "1",
-    code: "1",
-    isOther: false,
-  },
-
-  // แหล่งที่มา
-  source: {
-    selector: "#admin-report-source",
-    value: `สำนักงานสถิติแห่งชาติ ${randomText(5)}`,
-    maxLength: 500,
-    inputType: "string",
-  },
-
-  // รูปแบบการเก็บข้อมูล
-  format: {
-    selector: "#admin-report-format",
-    title: "CSV",
-    searchText: "CSV",
-    optionText: "CSV",
-    value: "1",
-    code: "1",
-    isOther: false,
-  },
-
-  // หมวดหมู่ข้อมูลตามธรรมาภิบาลข้อมูลภาครัฐ
-  governance: {
-    selector: "#admin-report-governance",
-    title: "ข้อมูลสาธารณะ",
-    searchText: "ข้อมูลสาธารณะ",
-    optionText: "ข้อมูลสาธารณะ",
-    value: "1",
-    code: "1",
-    isOther: false,
-  },
-
-  // สัญญาอนุญาตให้ใช้ข้อมูล
-license: {
-    selector: "#admin-report-license",
-    title: "Creative Commons Attributions",
-    searchText: "Creative Commons Attributions",
-    optionText: "Creative Commons Attributions",
-    value: "89",
-    code: "01",
-    isOther: false,
-  },
-  
-}
-
-// ข้อมูลประเภทอื่นๆ
-export const otherMetadataData = {
-   other: {
-    selector: "#admin-report-type",
-    title: "ข้อมูลประเภทอื่น ๆ ระบุ...",
-    searchText: "ข้อมูลประเภทอื่น",
-    optionText: "ข้อมูลประเภทอื่น ๆ ระบุ",
-    value: "5",
-    code: "9",
-    isOther: true,
-    otherInputSelector: "#admin-report-custom-type-name",
-    otherValue: `ข้อมูลประเภทอื่น ๆ ทดสอบ ${randomText(4)}`,
-  },
-  // ชื่อชุดข้อมูล
-  datasetName: {
-    selector: "#admin-report-dataset-name",
-    valuePrefix: "จำนวนกำลังแรงงานรวม",
-    maxLength: 150,
-    inputType: "string",
-  },
-
-  // องค์กร
-  org: {
-    selector: "#admin-report-org",
-    title: "สำนักงานปลัดสำนักนายกรัฐมนตรี",
-    searchText: "สำนักงานปลัดสำนักนายกรัฐมนตรี",
-    optionText: "สำนักงานปลัดสำนักนายกรัฐมนตรี",
-    value: "7",
-    code: "0101",
-    isOther: false,
-  },
-
-  // ชื่อผู้ติดต่อ
-  contactName: {
-    selector: "#admin-report-contact-name",
-    value: `ผู้ติดต่อ ${randomText(5)}`,
-    maxLength: 150,
-    inputType: "string",
-  },
-
-  // อีเมลผู้ติดต่อ
-  contactEmail: {
-    selector: "#admin-report-contact-email",
-    value: `contact${randomText(5)}@test.go.th`,
-    maxLength: 100,
-    inputType: "email",
-  },
-
-  // คำสำคัญ
-  keyword: {
-    selector: "#admin-report-keyword",
-    value: `แรงงาน,สถิติ,${randomText(5)}`,
-    maxLength: 500,
-    inputType: "string",
-  },
-
-  // รายละเอียด
-  description: {
-    selector: "#admin-report-desc",
-    value: `รายละเอียดข้อมูลสถิติ ${randomText(10)}`,
-    maxLength: 1000,
-    inputType: "string",
-  },
-
-  // วัตถุประสงค์
   objective: [
     {
-    selector: "#admin-report-objective",
-    title: "อื่น ๆ",
-    searchText: "อื่น ๆ",
-    optionText: "อื่น ๆ",
-    value: "41",
-    code: "99",
-    isOther: true,
+      selector: "#admin-report-objective",
+      title: "อื่น ๆ",
+      searchText: "อื่น ๆ",
+      optionText: "อื่น ๆ",
+      value: "41",
+      code: "99",
+      isOther: true,
 
-    otherInputSelector: "#admin-report-objective-other-new",
-    otherValue: `วัตถุประสงค์อื่น ๆ ทดสอบ ${randomText(4)}`,
-  },
+      otherInputSelector: "#admin-report-objective-other-new",
+      otherValue: `วัตถุประสงค์other ${randomText(4)}`,
+    },
 
-  {
-    selector: "#admin-report-objective",
-    title: "ยุทธศาสตร์ชาติ",
-    searchText: "ยุทธศาสตร์ชาติ",
-    optionText: "ยุทธศาสตร์ชาติ",
-    value: "28",
-    code: "1",
-    isOther: false,
-  }
-  ] ,
+    {
+      selector: "#admin-report-objective",
+      title: "ยุทธศาสตร์ชาติ",
+      searchText: "ยุทธศาสตร์ชาติ",
+      optionText: "ยุทธศาสตร์ชาติ",
+      value: "28",
+      code: "1",
+      isOther: false,
+    }
+  ],
 
   // หน่วยความถี่ของการปรับปรุงข้อมูล
   updateFrequencyUnit: {
@@ -1585,7 +1590,170 @@ export const otherMetadataData = {
     code: "01",
     isOther: false,
   },
-  
+
+}
+
+// ข้อมูลประเภทอื่นๆ
+export const otherMetadataData = {
+  other: {
+    selector: "#admin-report-type",
+    title: "ข้อมูลประเภทอื่น ๆ ระบุ...",
+    searchText: "อื่น ๆ ระบุ",
+    optionText: "ข้อมูลประเภทอื่น ๆ ระบุ...",
+    value: "5",
+    code: "9",
+    isOther: true,
+    otherInputSelector: "#admin-report-custom-type-name",
+    otherValue: `ข้อมูลประเภทother ${randomText(4)}`,
+  },
+  // ชื่อชุดข้อมูล
+  datasetName: {
+    selector: "#admin-report-dataset-name",
+    valuePrefix: "จำนวนกำลังแรงงานรวม",
+    maxLength: 150,
+    inputType: "string",
+  },
+
+  // องค์กร
+  org: {
+    selector: "#admin-report-org",
+    title: "สำนักงานปลัดสำนักนายกรัฐมนตรี",
+    searchText: "สำนักงานปลัดสำนักนายกรัฐมนตรี",
+    optionText: "สำนักงานปลัดสำนักนายกรัฐมนตรี",
+    value: "7",
+    code: "0101",
+    isOther: false,
+  },
+
+  // ชื่อผู้ติดต่อ
+  contactName: {
+    selector: "#admin-report-contact-name",
+    value: `ผู้ติดต่อ ${randomText(5)}`,
+    maxLength: 150,
+    inputType: "string",
+  },
+
+  // อีเมลผู้ติดต่อ
+  contactEmail: {
+    selector: "#admin-report-contact-email",
+    value: `contact${randomText(5)}@test.go.th`,
+    maxLength: 100,
+    inputType: "email",
+  },
+
+  // คำสำคัญ
+  keyword: {
+    selector: "#admin-report-keyword",
+    value: `แรงงาน,สถิติ,${randomText(5)}`,
+    maxLength: 500,
+    inputType: "string",
+  },
+
+  // รายละเอียด
+  description: {
+    selector: "#admin-report-desc",
+    value: `รายละเอียดข้อมูลสถิติ ${randomText(10)}`,
+    maxLength: 1000,
+    inputType: "string",
+  },
+
+  // วัตถุประสงค์
+  objective: [
+    {
+      selector: "#admin-report-objective",
+      title: "อื่น ๆ",
+      searchText: "อื่น ๆ",
+      optionText: "อื่น ๆ",
+      value: "41",
+      code: "99",
+      isOther: true,
+
+      otherInputSelector: "#admin-report-objective-other-new",
+      otherValue: `วัตถุประสงค์other ${randomText(4)}`,
+    },
+
+    {
+      selector: "#admin-report-objective",
+      title: "ยุทธศาสตร์ชาติ",
+      searchText: "ยุทธศาสตร์ชาติ",
+      optionText: "ยุทธศาสตร์ชาติ",
+      value: "28",
+      code: "1",
+      isOther: false,
+    }
+  ],
+
+  // หน่วยความถี่ของการปรับปรุงข้อมูล
+  updateFrequencyUnit: {
+    selector: "#admin-report-freq-unit",
+    title: "ปี",
+    searchText: "ปี",
+    optionText: "ปี",
+    value: "1",
+    code: "1",
+    isOther: false,
+  },
+
+  // ค่าความถี่ของการปรับปรุงข้อมูล
+  updateFrequencyValue: {
+    selector: "#admin-report-freq-value",
+    value: "1",
+    maxLength: 10,
+    inputType: "number",
+  },
+
+  // ขอบเขตเชิงภูมิศาสตร์หรือเชิงพื้นที่
+  geoCoverage: {
+    selector: "#admin-report-geo-scope",
+    title: "ประเทศ",
+    searchText: "ประเทศ",
+    optionText: "ประเทศ",
+    value: "1",
+    code: "1",
+    isOther: false,
+  },
+
+  // แหล่งที่มา
+  source: {
+    selector: "#admin-report-source",
+    value: `สำนักงานสถิติแห่งชาติ ${randomText(5)}`,
+    maxLength: 500,
+    inputType: "string",
+  },
+
+  // รูปแบบการเก็บข้อมูล
+  format: {
+    selector: "#admin-report-format",
+    title: "CSV",
+    searchText: "CSV",
+    optionText: "CSV",
+    value: "1",
+    code: "1",
+    isOther: false,
+  },
+
+  // หมวดหมู่ข้อมูลตามธรรมาภิบาลข้อมูลภาครัฐ
+  governance: {
+    selector: "#admin-report-governance",
+    title: "ข้อมูลสาธารณะ",
+    searchText: "ข้อมูลสาธารณะ",
+    optionText: "ข้อมูลสาธารณะ",
+    value: "1",
+    code: "1",
+    isOther: false,
+  },
+
+  // สัญญาอนุญาตให้ใช้ข้อมูล
+  license: {
+    selector: "#admin-report-license",
+    title: "Creative Commons Attributions",
+    searchText: "Creative Commons Attributions",
+    optionText: "Creative Commons Attributions",
+    value: "89",
+    code: "01",
+    isOther: false,
+  },
+
 }
 
 
@@ -1903,5 +2071,5 @@ export const additionalDictionaryRows: DictionaryRowTestData[] = [
 
 export const dictionaryRows: DictionaryRowTestData[] = additionalDictionaryRows;
 
- 
+
 

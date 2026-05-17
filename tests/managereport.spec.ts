@@ -50,7 +50,7 @@ import {
   getOtherMetadataCode,
   expectMetadataFieldValue,
 } from "./helpers/oracle-db";
-import { login} from "../share/login.spec";
+import { login } from "../share/login.spec";
 import { logout } from "../share/logout.spec";
 import { expectValidationMessagesIfAvailable } from "../share/ValidationMessages";
 
@@ -124,7 +124,7 @@ type MetadataScenarioDataWithAccess =
   | typeof geoSpatialMetadataData;
 
 // ให้ report บอกครบว่าข้อความไหนหาย
- 
+
 
 //ตรวจ  validate metadata
 type MetadataValidationCase = (typeof metadataValidationCases)[number];
@@ -207,7 +207,7 @@ export async function checkInputType(
   }
 
   if (field.inputType === "email") {
-    const value = field.value ?? "test@nso.go.th";
+    const value = field.value ?? `test${randomText(5)}@gmail.com`;
     await input.fill(value);
     await expect(input).toHaveValue(value);
     expect(value).toMatch(/^[^\s@]+@[^\s@]+\.[^\s@]+$/);
@@ -384,8 +384,12 @@ export async function fillSingleSelectOther(
   );
 
   if (item.isOther && item.otherInputSelector && item.otherValue) {
+    const safeSelector = item.otherInputSelector.endsWith(":visible")
+      ? item.otherInputSelector
+      : `${item.otherInputSelector}:visible`;
+
     await fillMetadataInput(page, {
-      selector: item.otherInputSelector,
+      selector: safeSelector,
       value: item.otherValue,
       maxLength: 150,
       inputType: "string",
@@ -474,11 +478,15 @@ export async function fillMultiSelectOther(
     );
 
     if (item.isOther && item.otherInputSelector && item.otherValue) {
-      const input = page.locator(item.otherInputSelector);
+      const safeSelector = item.otherInputSelector.endsWith(":visible")
+        ? item.otherInputSelector
+        : `${item.otherInputSelector}:visible`;
+
+      const input = page.locator(safeSelector);
 
       if (await input.isVisible().catch(() => false)) {
         await fillMetadataInput(page, {
-          selector: item.otherInputSelector,
+          selector: safeSelector,
           value: item.otherValue,
           maxLength: 500,
           inputType: "string",
@@ -489,10 +497,28 @@ export async function fillMultiSelectOther(
 }
 
 export async function fillGeoSpatialDatesForHappyCase(page: Page) {
-  await fillFlexibleDateText(
+  // แก้ตรงนี้: ดึงค่าประเภทและวันที่กำหนดเผยแพร่ข้อมูล จาก geoSpatialMetadataData
+  await fillSingleSelectOther(
     page,
-    geoSpatialMetadataData.scheduledPublishedDateTypeText,
-    geoSpatialMetadataData.scheduledPublishedDateText,
+    `${geoSpatialMetadataData.publishedDateType.selector}:visible`,
+    geoSpatialMetadataData.publishedDateType
+  );
+  await pickThaiDateTimePicker(
+    page,
+    `${geoSpatialMetadataData.publishedDate.selector}:visible`,
+    geoSpatialMetadataData.publishedDate.pickerValue
+  );
+
+  // แก้ตรงนี้: ดึงค่าประเภทและวันที่เผยแพร่ข้อมูล จาก geoSpatialMetadataData
+  await fillSingleSelectOther(
+    page,
+    `${geoSpatialMetadataData.dataPublishedDateType.selector}:visible`,
+    geoSpatialMetadataData.dataPublishedDateType
+  );
+  await pickThaiDateTimePicker(
+    page,
+    `${geoSpatialMetadataData.dataPublishedDate.selector}:visible`,
+    geoSpatialMetadataData.dataPublishedDate.pickerValue
   );
 }
 
@@ -537,19 +563,15 @@ export async function prepareMetadataTypeForMaxLength(
 export function getInputTypeFieldsByType(
   typeKey: keyof typeof metadataTypeData,
 ): readonly InputFieldTestData[] {
-  const commonFields = [
-    commonMetadataInputData.datasetName,
-    commonMetadataInputData.contactName,
-    commonMetadataInputData.contactEmail,
-    commonMetadataInputData.keyword,
-    commonMetadataInputData.description,
-    commonMetadataInputData.updateFrequencyValue,
-    commonMetadataInputData.source,
-  ];
-
   if (typeKey === "record") {
     return [
-      ...commonFields,
+      recordMetadataData.datasetName,
+      recordMetadataData.contactName,
+      recordMetadataData.contactEmail,
+      recordMetadataData.keyword,
+      recordMetadataData.description,
+      recordMetadataData.updateFrequencyValue,
+      recordMetadataData.source,
       accessConditionData.public,
       recordMetadataData.url,
     ];
@@ -557,7 +579,13 @@ export function getInputTypeFieldsByType(
 
   if (typeKey === "statistic") {
     return [
-      ...commonFields,
+      statisticMetadataData.datasetName,
+      statisticMetadataData.contactName,
+      statisticMetadataData.contactEmail,
+      statisticMetadataData.keyword,
+      statisticMetadataData.description,
+      statisticMetadataData.updateFrequencyValue,
+      statisticMetadataData.source,
       accessConditionData.public,
       statisticMetadataData.measureUnit,
       statisticMetadataData.calculationMethod,
@@ -568,7 +596,13 @@ export function getInputTypeFieldsByType(
 
   if (typeKey === "geoSpatial") {
     return [
-      ...commonFields,
+      geoSpatialMetadataData.datasetName,
+      geoSpatialMetadataData.contactName,
+      geoSpatialMetadataData.contactEmail,
+      geoSpatialMetadataData.keyword,
+      geoSpatialMetadataData.description,
+      geoSpatialMetadataData.updateFrequencyValue,
+      geoSpatialMetadataData.source,
       accessConditionData.public,
       geoSpatialMetadataData.westBoundLongitude,
       geoSpatialMetadataData.eastBoundLongitude,
@@ -584,20 +618,37 @@ export function getInputTypeFieldsByType(
     ];
   }
 
+  if (typeKey === "multiple") {
+    return [
+      multipleMetadataData.datasetName,
+      multipleMetadataData.contactName,
+      multipleMetadataData.contactEmail,
+      multipleMetadataData.keyword,
+      multipleMetadataData.description,
+      multipleMetadataData.updateFrequencyValue,
+      multipleMetadataData.source,
+    ];
+  }
+
   if (typeKey === "other") {
     return [
-      ...commonFields,
+      otherMetadataData.datasetName,
+      otherMetadataData.contactName,
+      otherMetadataData.contactEmail,
+      otherMetadataData.keyword,
+      otherMetadataData.description,
+      otherMetadataData.updateFrequencyValue,
+      otherMetadataData.source,
       {
-        selector: "#admin-report-custom-type-name",
-        value: metadataTypeData.other.otherValue,
+        selector: otherMetadataData.other.otherInputSelector,
+        value: otherMetadataData.other.otherValue,
         maxLength: 150,
         inputType: "string",
       },
     ];
   }
 
-  // multiple ไม่มี accessCondition
-  return commonFields;
+  return [];
 }
 export async function fillFlexibleDateText(
   page: Page,
@@ -1345,7 +1396,7 @@ export async function pickThaiDatePicker(
       const cell = dropdown.locator(targetSelector).first();
 
       if (await cell.isVisible().catch(() => false)) {
-        await cell.click({ force: true });
+        await cell.dispatchEvent("click");
         await page.keyboard.press("Escape");
         await page.waitForTimeout(300);
         return;
@@ -1407,14 +1458,14 @@ export async function pickThaiDateTimePicker(
       const cell = dropdown.locator(targetSelector).first();
 
       if (await cell.isVisible().catch(() => false)) {
-        await cell.click({ force: true });
+        await cell.dispatchEvent("click");
 
         const okButton = dropdown.getByRole("button", {
           name: /ok|ตกลง/i,
         });
 
         if (await okButton.isVisible().catch(() => false)) {
-          await okButton.click({ force: true });
+          await okButton.dispatchEvent("click");
         } else {
           await page.keyboard.press("Enter");
         }
@@ -1572,13 +1623,53 @@ export async function closeAntdDropdown(page: Page) {
 }
 
 export async function fillStatisticDatesForHappyCase(page: Page) {
-  await pickThaiDatePicker(page, "#admin-report-start-data-year", "2025-01-01");
+  // 1. Start data year
+  await fillSingleSelectOther(
+    page,
+    `${statisticMetadataData.startDataYearType.selector}:visible`,
+    statisticMetadataData.startDataYearType,
+  );
+  await pickThaiDatePicker(
+    page,
+    `${statisticMetadataData.startDataYear.selector}:visible`,
+    statisticMetadataData.startDataYear.pickerValue,
+  );
 
-  if (await page.locator("#admin-report-latest-published-year").isVisible().catch(() => false)) {
-    await pickThaiDatePicker(page, "#admin-report-latest-published-year", "2026-01-01");
+  // 2. Latest published year
+  if (
+    await page
+      .locator(`${statisticMetadataData.latestPublishedYear.selector}:visible`)
+      .isVisible()
+      .catch(() => false)
+  ) {
+    await fillSingleSelectOther(
+      page,
+      `${statisticMetadataData.latestPublishedYearType.selector}:visible`,
+      statisticMetadataData.latestPublishedYearType,
+    );
+    await pickThaiDatePicker(
+      page,
+      `${statisticMetadataData.latestPublishedYear.selector}:visible`,
+      statisticMetadataData.latestPublishedYear.pickerValue,
+    );
   }
 
-  await pickThaiDateTimePicker(page, "#admin-report-published-date", "2026-04-28");
+  // 3. Published date
+  await fillSingleSelectOther(
+    page,
+    `${statisticMetadataData.publishedDateType.selector}:visible`,
+    statisticMetadataData.publishedDateType,
+  );
+
+  if (statisticMetadataData.publishedDateType.value === "DATETIME") {
+    await pickThaiDateTimePicker(
+      page,
+      `${statisticMetadataData.publishedDate.selector}:visible`,
+      statisticMetadataData.publishedDate.pickerValue,
+    );
+  } else {
+    await fillMetadataInput(page, statisticMetadataData.publishedDateText);
+  }
 }
 
 export async function fillStatisticDatesOnly(page: Page) {
@@ -1620,33 +1711,50 @@ export async function fillStatisticDatesOnly(page: Page) {
 }
 
 export async function fillGeoSpatialDatesOnly(page: Page) {
-  // เวลาอ้างอิง ถ้าไม่ required อาจข้ามได้
-  // await fillSingleSelectOther(
-  //   page,
-  //   geoSpatialMetadataData.referenceTimeType.selector,
-  //   geoSpatialMetadataData.referenceTimeType,
-  // );
-  // await fillDatePickerOnly(page, geoSpatialMetadataData.referenceTime);
-
-  await fillFlexibleDateText(
-    page,
-    geoSpatialMetadataData.scheduledPublishedDateTypeText,
-    geoSpatialMetadataData.scheduledPublishedDateText,
-  );
+  // แก้ตรงนี้: เลือกประเภทของ วันที่กำหนดเผยแพร่ข้อมูล ก่อนเพื่อเปิดใช้งานช่องกรอก
+  await fillSingleSelectOther(page, "#admin-report-published-date-type-spatial", {
+    title: "วันเวลา",
+    searchText: "วันเวลา",
+    optionText: "วันเวลา",
+    value: "DATETIME",
+    code: "DATETIME",
+    isOther: false,
+  });
+  await pickThaiDateTimePicker(page, "#admin-report-published-date-spatial", "2026-04-28");
 }
 
 export async function fillMetadataForTypeCheck(
   page: Page,
   typeKey: keyof typeof metadataTypeData,
 ) {
-  await fillMetadataType(page, metadataTypeData[typeKey]);
+  const targetData = typeKey === "record" ? recordMetadataData :
+                     typeKey === "statistic" ? statisticMetadataData :
+                     typeKey === "geoSpatial" ? geoSpatialMetadataData :
+                     typeKey === "multiple" ? multipleMetadataData :
+                     otherMetadataData;
 
-  await fillCommonMetadataInputs(page);
-  await fillCommonMetadataSelectsWithoutGovernance(page);
-  await fillObjectiveForValidation(page);
+  const typeData = typeKey === "record" ? recordMetadataData.record :
+                   typeKey === "statistic" ? statisticMetadataData.statistic :
+                   typeKey === "geoSpatial" ? geoSpatialMetadataData.geoSpatial :
+                   typeKey === "multiple" ? multipleMetadataData.multiple :
+                   otherMetadataData.other;
 
-  // record/statistic/geoSpatial มี accessCondition
-  // multiple/other ไม่มี accessCondition แต่ยังต้องเลือก governance
+  await fillMetadataType(page, typeData as any);
+
+  await fillScenarioMetadataInputs(page, targetData as any);
+  await fillScenarioMetadataSelectsWithoutGovernance(page, targetData as any);
+
+  if ((targetData as any).objective) {
+    await fillMultiSelectOther(
+      page,
+      `${(targetData as any).objective[0].selector}:visible`,
+      (targetData as any).objective as any
+    );
+  } else {
+    await fillObjectiveForValidation(page);
+  }
+
+  // Governance
   if (
     typeKey === "record" ||
     typeKey === "statistic" ||
@@ -1654,97 +1762,79 @@ export async function fillMetadataForTypeCheck(
   ) {
     await fillAccessConditionByGovernance(page, dataGovernanceData.public);
   } else {
-    await fillGovernanceOnly(page, dataGovernanceData.public);
+    await fillGovernanceOnly(page, (targetData as any).governance);
   }
 
   if (typeKey === "other") {
-    const customTypeInput = page.locator("#admin-report-custom-type-name");
-
+    const customTypeInput = page.locator(otherMetadataData.other.otherInputSelector);
     if (await customTypeInput.isVisible().catch(() => false)) {
-      await customTypeInput.fill(metadataTypeData.other.otherValue);
-      await expect(customTypeInput).toHaveValue(metadataTypeData.other.otherValue);
+      await customTypeInput.fill(otherMetadataData.other.otherValue);
+      await expect(customTypeInput).toHaveValue(otherMetadataData.other.otherValue);
     }
-
     return;
   }
 
-  if (typeKey === "multiple") {
-    return;
-  }
-
-
+  if (typeKey === "multiple") return;
 
   if (typeKey === "record") {
     await fillMetadataInput(page, recordMetadataData.url);
-
-    await fillMultiSelectOtherAndDetail(
+    await fillMultiSelectOther(
       page,
-      "#admin-report-sponsor",
-      sponsorData,
-      (value) => `#admin-report-sponsor-other-new`,
+      `${recordMetadataData.sponsor[0].selector}:visible`,
+      recordMetadataData.sponsor,
     );
-
     await fillSingleSelectOther(
       page,
-      "#admin-report-smallest-unit",
-      smallestUnitData,
+      `${recordMetadataData.smallestUnit.selector}:visible`,
+      recordMetadataData.smallestUnit,
     );
-
-    await fillMultiSelectOther(page, "#admin-report-language", languageData);
-
+    await fillMultiSelectOther(
+      page,
+      `${recordMetadataData.language.selector}:visible`,
+      recordMetadataData.language,
+    );
     return;
   }
 
   if (typeKey === "statistic") {
-    // Scenario 8 ไม่ตรวจ DatePicker แต่ถ้า field required ต้องกรอกแบบไม่ expect value
-    // await fillStatisticDatesOnly(page);
-
     await fillMultiSelectOther(
       page,
-      "#admin-report-classification",
+      `${statisticMetadataData.classificationData[0].selector}:visible`,
       statisticMetadataData.classificationData,
     );
-
     await fillMetadataInput(page, statisticMetadataData.measureUnit);
-
     await fillSingleSelectOther(
       page,
-      "#admin-report-multiplier-unit",
+      `${statisticMetadataData.multiplierUnit.selector}:visible`,
       statisticMetadataData.multiplierUnit,
     );
-
     await fillMetadataInput(page, statisticMetadataData.calculationMethod);
     await fillMetadataInput(page, statisticMetadataData.dataStandard);
     await fillMetadataInput(page, statisticMetadataData.url);
-
     await fillMultiSelectOther(
       page,
-      "#admin-report-language",
+      `${statisticMetadataData.languageData[0].selector}:visible`,
       statisticMetadataData.languageData,
     );
-
     await setSwitch(
       page,
       statisticMetadataData.officialStatistic.id,
       statisticMetadataData.officialStatistic.checked,
     );
-
     return;
   }
 
   if (typeKey === "geoSpatial") {
     await fillSingleSelectOther(
       page,
-      "#admin-report-geographic-dataset",
+      `${geoSpatialMetadataData.geographicDataset.selector}:visible`,
       geoSpatialMetadataData.geographicDataset,
     );
-
     await fillMultiSelectOther(
       page,
-      "#admin-report-map-scale",
+      `${geoSpatialMetadataData.mapScaleData[0].selector}:visible`,
       geoSpatialMetadataData.mapScaleData,
     );
-
     await fillMetadataInput(page, geoSpatialMetadataData.westBoundLongitude);
     await fillMetadataInput(page, geoSpatialMetadataData.eastBoundLongitude);
     await fillMetadataInput(page, geoSpatialMetadataData.northBoundLatitude);
@@ -1752,17 +1842,12 @@ export async function fillMetadataForTypeCheck(
 
     await fillPositionalAccuracy(page);
 
-    // Scenario 8 ไม่ตรวจ DatePicker แต่กรอกเพื่อผ่าน validation ถ้าจำเป็น
-    // await fillGeoSpatialDatesOnly(page);
-
     await fillMetadataInput(page, geoSpatialMetadataData.url);
-
     await fillMultiSelectOther(
       page,
-      "#admin-report-language",
+      `${geoSpatialMetadataData.languageData[0].selector}:visible`,
       geoSpatialMetadataData.languageData,
     );
-
     return;
   }
 }
@@ -1849,9 +1934,12 @@ export async function fillScenarioObjective(
   const objectiveItems = Array.isArray(objective) ? objective : [objectiveData[1]];
 
   for (const item of objectiveItems) {
+    const rawSelector = item.selector ?? "#admin-report-objective";
+    const visibleSelector = rawSelector.endsWith(":visible") ? rawSelector : `${rawSelector}:visible`;
+
     await selectAntdMultipleOptionBySearch(
       page,
-      item.selector ?? "#admin-report-objective",
+      visibleSelector,
       item.searchText ?? item.title,
       item.optionText ?? item.title,
     );
@@ -1880,27 +1968,35 @@ export async function fillScenarioMetadataSelectsWithoutGovernance(
   page: Page,
   metadataData: MetadataScenarioData,
 ) {
-  await fillSingleSelectOther(page, metadataData.org.selector, metadataData.org);
+  const ensureVisible = (selector: string) => selector.endsWith(":visible") ? selector : `${selector}:visible`;
+
+  await fillSingleSelectOther(page, ensureVisible(metadataData.org.selector), metadataData.org);
 
   await fillScenarioObjective(page, metadataData.objective);
 
   await fillSingleSelectOther(
     page,
-    metadataData.updateFrequencyUnit.selector,
+    ensureVisible(metadataData.updateFrequencyUnit.selector),
     metadataData.updateFrequencyUnit,
   );
 
   await fillSingleSelectOther(
     page,
-    metadataData.geoCoverage.selector,
+    ensureVisible(metadataData.geoCoverage.selector),
     metadataData.geoCoverage,
   );
 
-  await fillMultiSelectOther(page, metadataData.format.selector, [
-    metadataData.format,
-  ]);
+  const formatSelector = Array.isArray(metadataData.format)
+    ? (metadataData.format[0] as any).selector
+    : (metadataData.format as any).selector;
 
-  await fillSingleSelectOther(page, metadataData.license.selector, metadataData.license);
+  const formatList = Array.isArray(metadataData.format)
+    ? metadataData.format
+    : [metadataData.format];
+
+  await fillMultiSelectOther(page, ensureVisible(formatSelector), formatList as any);
+
+  await fillSingleSelectOther(page, ensureVisible(metadataData.license.selector), metadataData.license);
 }
 
 export async function fillScenarioMetadataSelects(
@@ -3101,198 +3197,198 @@ test.describe("Manage Report Page", () => {
     ]);
   });
 
- test("Scenario validation metadata type record: ตรวจ validation การกรอกข้อมูล Metadata - ข้อมูลระเบียน", async ({
-  page,
-}) => {
-  await runMetadataValidationCase(page, {
-    key: metadataValidationCases[0].key,
-    name:  metadataValidationCases[0].name,
-    messages: metadataValidationCases[0].messages
+  test("Scenario validation metadata type record: ตรวจ validation การกรอกข้อมูล Metadata - ข้อมูลระเบียน", async ({
+    page,
+  }) => {
+    await runMetadataValidationCase(page, {
+      key: metadataValidationCases[0].key,
+      name: metadataValidationCases[0].name,
+      messages: metadataValidationCases[0].messages
+    });
   });
-});
 
-test("Scenario validation metadata type statistic: ตรวจ validation การกรอกข้อมูล Metadata - ข้อมูลสถิติ", async ({
-  page,
-}) => {
-  await runMetadataValidationCase(page, {
-    key: metadataValidationCases[1].key,
-    name:  metadataValidationCases[1].name,
-    messages: metadataValidationCases[1].messages
+  test("Scenario validation metadata type statistic: ตรวจ validation การกรอกข้อมูล Metadata - ข้อมูลสถิติ", async ({
+    page,
+  }) => {
+    await runMetadataValidationCase(page, {
+      key: metadataValidationCases[1].key,
+      name: metadataValidationCases[1].name,
+      messages: metadataValidationCases[1].messages
+    });
   });
-});
 
-test("Scenario validation metadata type geoSpatial: ตรวจ validation การกรอกข้อมูล Metadata - ข้อมูลภูมิสารสนเทศเชิงพื้นที่", async ({
-  page,
-}) => {
-  await runMetadataValidationCase(page, {
-    key: metadataValidationCases[2].key,
-    name:  metadataValidationCases[2].name,
-    messages: metadataValidationCases[2].messages
+  test("Scenario validation metadata type geoSpatial: ตรวจ validation การกรอกข้อมูล Metadata - ข้อมูลภูมิสารสนเทศเชิงพื้นที่", async ({
+    page,
+  }) => {
+    await runMetadataValidationCase(page, {
+      key: metadataValidationCases[2].key,
+      name: metadataValidationCases[2].name,
+      messages: metadataValidationCases[2].messages
+    });
   });
-});
 
-test("Scenario validation metadata type multiple: ตรวจ validation การกรอกข้อมูล Metadata - ข้อมูลหลากหลายประเภท", async ({
-  page,
-}) => {
-  await runMetadataValidationCase(page, {
-    key: metadataValidationCases[3].key,
-    name:  metadataValidationCases[3].name,
-    messages: metadataValidationCases[3].messages
+  test("Scenario validation metadata type multiple: ตรวจ validation การกรอกข้อมูล Metadata - ข้อมูลหลากหลายประเภท", async ({
+    page,
+  }) => {
+    await runMetadataValidationCase(page, {
+      key: metadataValidationCases[3].key,
+      name: metadataValidationCases[3].name,
+      messages: metadataValidationCases[3].messages
+    });
   });
-});
 
-test("Scenario validation metadata type other: ตรวจ validation การกรอกข้อมูล Metadata - ข้อมูลประเภทอื่น ๆ ระบุ", async ({
-  page,
-}) => {
-  await runMetadataValidationCase(page, {
-   key: metadataValidationCases[4].key,
-    name:  metadataValidationCases[4].name,
-    messages: metadataValidationCases[4].messages
+  test("Scenario validation metadata type other: ตรวจ validation การกรอกข้อมูล Metadata - ข้อมูลประเภทอื่น ๆ ระบุ", async ({
+    page,
+  }) => {
+    await runMetadataValidationCase(page, {
+      key: metadataValidationCases[4].key,
+      name: metadataValidationCases[4].name,
+      messages: metadataValidationCases[4].messages
+    });
   });
-});
 
-test("Scenario validation metadata type none: ตรวจ validation การกรอกข้อมูล Metadata - ไม่เลือกประเภทข้อมูล", async ({
-  page,
-}) => {
-  await runMetadataValidationCase(page, {
-    key: metadataValidationCases[5].key,
-    name:  metadataValidationCases[5].name,
-    messages: metadataValidationCases[5].messages
+  test("Scenario validation metadata type none: ตรวจ validation การกรอกข้อมูล Metadata - ไม่เลือกประเภทข้อมูล", async ({
+    page,
+  }) => {
+    await runMetadataValidationCase(page, {
+      key: metadataValidationCases[5].key,
+      name: metadataValidationCases[5].name,
+      messages: metadataValidationCases[5].messages
+    });
   });
-});
 
 
-   
+
 
   test("Scenario Exception maxLength record: กรอกข้อมูลเกิน maxLength ใน Metadata - ข้อมูลระเบียน", async ({
-  page,
-}) => {
-  // test.setTimeout(30000);
+    page,
+  }) => {
+    // test.setTimeout(30000);
 
-  await mReportPart1(page);
+    await mReportPart1(page);
 
-  await page.locator("#admin-report-step-1-next").click();
+    await page.locator("#admin-report-step-1-next").click();
 
-  await expect(page.locator("#admin-report-type")).toBeVisible({
-    timeout: 10000,
+    await expect(page.locator("#admin-report-type")).toBeVisible({
+      timeout: 10000,
+    });
+
+    await prepareMetadataTypeForMaxLength(page, "record");
+
+    const fields = getMaxLengthInputFieldsByType("record");
+
+    for (const field of fields) {
+      const input = page.locator(field.selector);
+
+      if (await input.isVisible().catch(() => false)) {
+        await checkInputRejectsOverMaxLength(page, field);
+      }
+    }
   });
 
-  await prepareMetadataTypeForMaxLength(page, "record");
+  test("Scenario Exception maxLength statistic: กรอกข้อมูลเกิน maxLength ใน Metadata - ข้อมูลสถิติ", async ({
+    page,
+  }) => {
+    // test.setTimeout(240000);
 
-  const fields = getMaxLengthInputFieldsByType("record");
+    await mReportPart1(page);
 
-  for (const field of fields) {
-    const input = page.locator(field.selector);
+    await page.locator("#admin-report-step-1-next").click();
 
-    if (await input.isVisible().catch(() => false)) {
-      await checkInputRejectsOverMaxLength(page, field);
+    await expect(page.locator("#admin-report-type")).toBeVisible({
+      timeout: 10000,
+    });
+
+    await prepareMetadataTypeForMaxLength(page, "statistic");
+
+    const fields = getMaxLengthInputFieldsByType("statistic");
+
+    for (const field of fields) {
+      const input = page.locator(field.selector);
+
+      if (await input.isVisible().catch(() => false)) {
+        await checkInputRejectsOverMaxLength(page, field);
+      }
     }
-  }
-});
-
-test("Scenario Exception maxLength statistic: กรอกข้อมูลเกิน maxLength ใน Metadata - ข้อมูลสถิติ", async ({
-  page,
-}) => {
-  // test.setTimeout(240000);
-
-  await mReportPart1(page);
-
-  await page.locator("#admin-report-step-1-next").click();
-
-  await expect(page.locator("#admin-report-type")).toBeVisible({
-    timeout: 10000,
   });
 
-  await prepareMetadataTypeForMaxLength(page, "statistic");
+  test("Scenario Exception maxLength geoSpatial: กรอกข้อมูลเกิน maxLength ใน Metadata - ข้อมูลภูมิสารสนเทศเชิงพื้นที่", async ({
+    page,
+  }) => {
+    // test.setTimeout(240000);
 
-  const fields = getMaxLengthInputFieldsByType("statistic");
+    await mReportPart1(page);
 
-  for (const field of fields) {
-    const input = page.locator(field.selector);
+    await page.locator("#admin-report-step-1-next").click();
 
-    if (await input.isVisible().catch(() => false)) {
-      await checkInputRejectsOverMaxLength(page, field);
+    await expect(page.locator("#admin-report-type")).toBeVisible({
+      timeout: 10000,
+    });
+
+    await prepareMetadataTypeForMaxLength(page, "geoSpatial");
+
+    const fields = getMaxLengthInputFieldsByType("geoSpatial");
+
+    for (const field of fields) {
+      const input = page.locator(field.selector);
+
+      if (await input.isVisible().catch(() => false)) {
+        await checkInputRejectsOverMaxLength(page, field);
+      }
     }
-  }
-});
-
-test("Scenario Exception maxLength geoSpatial: กรอกข้อมูลเกิน maxLength ใน Metadata - ข้อมูลภูมิสารสนเทศเชิงพื้นที่", async ({
-  page,
-}) => {
-  // test.setTimeout(240000);
-
-  await mReportPart1(page);
-
-  await page.locator("#admin-report-step-1-next").click();
-
-  await expect(page.locator("#admin-report-type")).toBeVisible({
-    timeout: 10000,
   });
 
-  await prepareMetadataTypeForMaxLength(page, "geoSpatial");
+  test("Scenario Exception maxLength multiple: กรอกข้อมูลเกิน maxLength ใน Metadata - ข้อมูลหลากหลายประเภท", async ({
+    page,
+  }) => {
+    // test.setTimeout(240000);
 
-  const fields = getMaxLengthInputFieldsByType("geoSpatial");
+    await mReportPart1(page);
 
-  for (const field of fields) {
-    const input = page.locator(field.selector);
+    await page.locator("#admin-report-step-1-next").click();
 
-    if (await input.isVisible().catch(() => false)) {
-      await checkInputRejectsOverMaxLength(page, field);
+    await expect(page.locator("#admin-report-type")).toBeVisible({
+      timeout: 10000,
+    });
+
+    await prepareMetadataTypeForMaxLength(page, "multiple");
+
+    const fields = getMaxLengthInputFieldsByType("multiple");
+
+    for (const field of fields) {
+      const input = page.locator(field.selector);
+
+      if (await input.isVisible().catch(() => false)) {
+        await checkInputRejectsOverMaxLength(page, field);
+      }
     }
-  }
-});
-
-test("Scenario Exception maxLength multiple: กรอกข้อมูลเกิน maxLength ใน Metadata - ข้อมูลหลากหลายประเภท", async ({
-  page,
-}) => {
-  // test.setTimeout(240000);
-
-  await mReportPart1(page);
-
-  await page.locator("#admin-report-step-1-next").click();
-
-  await expect(page.locator("#admin-report-type")).toBeVisible({
-    timeout: 10000,
   });
 
-  await prepareMetadataTypeForMaxLength(page, "multiple");
+  test("Scenario Exception maxLength other: กรอกข้อมูลเกิน maxLength ใน Metadata - ข้อมูลประเภทอื่น ๆ ระบุ", async ({
+    page,
+  }) => {
+    test.setTimeout(240000);
 
-  const fields = getMaxLengthInputFieldsByType("multiple");
+    await mReportPart1(page);
 
-  for (const field of fields) {
-    const input = page.locator(field.selector);
+    await page.locator("#admin-report-step-1-next").click();
 
-    if (await input.isVisible().catch(() => false)) {
-      await checkInputRejectsOverMaxLength(page, field);
+    await expect(page.locator("#admin-report-type")).toBeVisible({
+      timeout: 10000,
+    });
+
+    await prepareMetadataTypeForMaxLength(page, "other");
+
+    const fields = getMaxLengthInputFieldsByType("other");
+
+    for (const field of fields) {
+      const input = page.locator(field.selector);
+
+      if (await input.isVisible().catch(() => false)) {
+        await checkInputRejectsOverMaxLength(page, field);
+      }
     }
-  }
-});
-
-test("Scenario Exception maxLength other: กรอกข้อมูลเกิน maxLength ใน Metadata - ข้อมูลประเภทอื่น ๆ ระบุ", async ({
-  page,
-}) => {
-  test.setTimeout(240000);
-
-  await mReportPart1(page);
-
-  await page.locator("#admin-report-step-1-next").click();
-
-  await expect(page.locator("#admin-report-type")).toBeVisible({
-    timeout: 10000,
   });
-
-  await prepareMetadataTypeForMaxLength(page, "other");
-
-  const fields = getMaxLengthInputFieldsByType("other");
-
-  for (const field of fields) {
-    const input = page.locator(field.selector);
-
-    if (await input.isVisible().catch(() => false)) {
-      await checkInputRejectsOverMaxLength(page, field);
-    }
-  }
-});
 
   // -------------
   test("Scenario fillMetadataTypeRecord: กรอกข้อมูลรายงาน , กรอก Meatadata โดยเลือก ประเภทข้อมูลระเบียน และกรอกข้อมูล Datadictionary", async ({
@@ -3326,34 +3422,37 @@ test("Scenario Exception maxLength other: กรอกข้อมูลเก�
 
     await closeAntdDropdown(page);
 
-    await fillMultiSelectOtherAndDetail(
+    await fillMultiSelectOther(
       page,
-      "#admin-report-sponsor",
-      sponsorData,
-      (value) => `#admin-report-sponsor-other-new`,
+      `${recordMetadataData.sponsor[0].selector}:visible`,
+      recordMetadataData.sponsor,
     );
 
     await closeAntdDropdown(page);
 
     await fillSingleSelectOther(
       page,
-      "#admin-report-smallest-unit",
-      smallestUnitData,
+      `${recordMetadataData.smallestUnit.selector}:visible`,
+      recordMetadataData.smallestUnit,
     );
 
     await closeAntdDropdown(page);
 
-    await fillMultiSelectOther(page, "#admin-report-language", languageData);
+    await fillMultiSelectOther(
+      page,
+      `${recordMetadataData.language.selector}:visible`,
+      recordMetadataData.language,
+    );
 
     await setSwitch(
       page,
-      "admin-report-high-value-dataset",
+      recordMetadataData.highValueDataset.id,
       recordMetadataData.highValueDataset.checked,
     );
 
     await setSwitch(
       page,
-      "admin-report-reference-data",
+      recordMetadataData.referenceData.id,
       recordMetadataData.referenceData.checked,
     );
 
@@ -3391,7 +3490,7 @@ test("Scenario Exception maxLength other: กรอกข้อมูลเก�
 
     await fillMultiSelectOther(
       page,
-      "#admin-report-classification",
+      `${statisticMetadataData.classification.selector}:visible`,
       statisticMetadataData.classificationData,
     );
 
@@ -3399,7 +3498,7 @@ test("Scenario Exception maxLength other: กรอกข้อมูลเก�
 
     await fillSingleSelectOther(
       page,
-      "#admin-report-multiplier-unit",
+      `${statisticMetadataData.multiplierUnit.selector}:visible`,
       statisticMetadataData.multiplierUnit,
     );
 
@@ -3409,7 +3508,7 @@ test("Scenario Exception maxLength other: กรอกข้อมูลเก�
 
     await fillMultiSelectOther(
       page,
-      "#admin-report-language",
+      `${statisticMetadataData.language.selector}:visible`,
       statisticMetadataData.languageData,
     );
 
@@ -3441,22 +3540,25 @@ test("Scenario Exception maxLength other: กรอกข้อมูลเก�
       timeout: 10000,
     });
 
-    await fillMetadataType(page, metadataTypeData.geoSpatial);
+    // แก้ตรงนี้: เปลี่ยนมาเลือกประเภทข้อมูลจาก geoSpatialMetadataData.geoSpatial โดยตรงทั้งหมดทุกตัว
+    await fillMetadataType(page, geoSpatialMetadataData.geoSpatial);
 
     await fillScenarioMetadataInputs(page, geoSpatialMetadataData);
     await fillScenarioMetadataSelectsWithoutGovernance(page, geoSpatialMetadataData);
 
     await fillScenarioAccessConditionByGovernance(page, geoSpatialMetadataData);
 
+    // แก้ตรงนี้: เปลี่ยนมาระบุ selector จาก geoSpatialMetadataData.geographicDataset.selector
     await fillSingleSelectOther(
       page,
-      "#admin-report-geographic-dataset",
+      geoSpatialMetadataData.geographicDataset.selector,
       geoSpatialMetadataData.geographicDataset,
     );
 
+    // แก้ตรงนี้: เปลี่ยนมาระบุ selector จาก geoSpatialMetadataData.mapScaleData[0].selector
     await fillMultiSelectOther(
       page,
-      "#admin-report-map-scale",
+      geoSpatialMetadataData.mapScaleData[0].selector,
       geoSpatialMetadataData.mapScaleData,
     );
 
@@ -3465,19 +3567,40 @@ test("Scenario Exception maxLength other: กรอกข้อมูลเก�
     await fillMetadataInput(page, geoSpatialMetadataData.northBoundLatitude);
     await fillMetadataInput(page, geoSpatialMetadataData.southBoundLatitude);
 
-    await fillPositionalAccuracy(page);
+    // แก้ตรงนี้: เปลี่ยนมาดึงข้อมูลความถูกต้องของตำแหน่ง (positionalAccuracy) จาก geoSpatialMetadataData โดยตรง แทนการเรียก fillPositionalAccuracy helper
+    await fillSingleSelectOther(
+      page,
+      geoSpatialMetadataData.positionalAccuracy.has.selector,
+      geoSpatialMetadataData.positionalAccuracy.has,
+    );
+    await fillMetadataInput(page, {
+      selector: geoSpatialMetadataData.positionalAccuracy.has.otherInputSelector,
+      value: geoSpatialMetadataData.positionalAccuracy.has.otherValue,
+      maxLength: 100,
+      inputType: "string",
+    });
 
-    // เวลาอ้างอิง ถ้าไม่ required จะไม่กรอกก็ได้
-    // await fillDatePickerOnly(page, geoSpatialMetadataData.referenceTime);
+    // แก้ตรงนี้: เปิดใช้งานและกรอกข้อมูลเวลาอ้างอิง (referenceTimeType และ referenceTime) ตามข้อมูลใน geoSpatialMetadataData
+    await fillSingleSelectOther(
+      page,
+      `${geoSpatialMetadataData.referenceTimeType.selector}:visible`,
+      geoSpatialMetadataData.referenceTimeType,
+    );
+    await pickThaiDateTimePicker(
+      page,
+      `${geoSpatialMetadataData.referenceTime.selector}:visible`,
+      geoSpatialMetadataData.referenceTime.pickerValue,
+    );
 
-    // วันที่กําหนดเผยแพร่ข้อมูล required
+    // แก้ตรงนี้: เรียกใช้ helper กรอกวันที่จาก geoSpatialMetadataData.publishedDate และ geoSpatialMetadataData.releaseDate ทั้งหมด
     await fillGeoSpatialDatesForHappyCase(page);
 
     await fillMetadataInput(page, geoSpatialMetadataData.url);
 
+    // แก้ตรงนี้: เปลี่ยนมาระบุ selector จาก geoSpatialMetadataData.languageData[0].selector และระบุ :visible เพื่อให้เลือกตัวใน tab ภูมิสารสนเทศที่แสดงอยู่จริง
     await fillMultiSelectOther(
       page,
-      "#admin-report-language",
+      `${geoSpatialMetadataData.languageData[0].selector}:visible`,
       geoSpatialMetadataData.languageData,
     );
 
@@ -3500,6 +3623,7 @@ test("Scenario Exception maxLength other: กรอกข้อมูลเก�
     await page.locator("#admin-report-step-1-next").click();
     await page.waitForTimeout(500);
 
+    // ค้นหา type
     await fillMetadataType(page, metadataTypeData.multiple);
 
     // กรอกข้อมูล step 2 เฉพาะ field พื้นฐานที่เห็นเท่านั้น
@@ -3530,7 +3654,7 @@ test("Scenario Exception maxLength other: กรอกข้อมูลเก�
 
     // ประเภทข้อมูล = ข้อมูลประเภทอื่น ๆ ระบุ...
     // helper นี้จะกรอก #admin-report-custom-type-name ให้ด้วย
-    await fillMetadataType(page, metadataTypeData.other);
+    await fillMetadataType(page, otherMetadataData.other);
 
     await fillScenarioMetadataInputs(page, otherMetadataData);
     await fillScenarioMetadataSelects(page, otherMetadataData);
@@ -3545,67 +3669,6 @@ test("Scenario Exception maxLength other: กรอกข้อมูลเก�
     expect(dbResult.dictionary.length).toBeGreaterThan(0);
   });
 
-  // for (const item of metadataTypeCases) {
-  //   test(`Scenario 8: แก้ไขข้อมูลรายงาน, metadata ${item.name}, data dictionary`, async ({
-  //     page,
-  //   }) => {
-  //     test.setTimeout(180000);
-
-  //     const created = await createReportForType(page, item.key);
-  //     const beforeSnapshotText = snapshotToText(created.snapshot);
-  //     const editValues = buildScenarioValues(item.key, "edit");
-
-  //     await openManageReportAction(page, "edit", created.datasetGroupId);
-
-  //     await expect(page.locator("#admin-report-add-name")).toBeVisible({
-  //       timeout: 30000,
-  //     });
-
-  //     await fillAndExpect(page, "#admin-report-add-name", editValues.reportName);
-  //     await goToMetadataStep(page);
-  //     await applyEditValuesForType(page, item.key, editValues);
-  //     await goToDataDictionaryStep(page);
-  //     await updateDictionaryForEdit(page, editValues);
-  //     await saveReport(page);
-
-  //     const afterSnapshot = (await expectDatasetSavedById(
-  //       created.datasetGroupId,
-  //     )) as DatasetSnapshot;
-  //     const afterSnapshotText = snapshotToText(afterSnapshot);
-
-  //     expect(beforeSnapshotText).not.toContain(editValues.datasetName);
-  //     expect(beforeSnapshotText).not.toContain(editValues.dictColumnName);
-  //     expect(afterSnapshotText).toContain(editValues.datasetName);
-  //     expect(afterSnapshotText).toContain(editValues.dictColumnName);
-  //     expect(afterSnapshotText).toContain(editValues.dictDescription);
-  //     expect(afterSnapshotText).toContain(editValues.dictSample);
-  //     expectTypeSpecificSnapshotValue(afterSnapshotText, item.key, editValues);
-  //     expect(afterSnapshotText).not.toBe(beforeSnapshotText);
-
-  //     await openManageReportAction(page, "view", created.datasetGroupId);
-  //     await expectViewValuesForType(page, item.key, editValues);
-  //   });
-  // }
-
-  // for (const item of metadataTypeCases) {
-  //   test(`Scenario 9: ดูข้อมูลรายงาน, metadata ${item.name}, data dictionary`, async ({
-  //     page,
-  //   }) => {
-  //     test.setTimeout(180000);
-
-  //     const created = await createReportForType(page, item.key);
-
-  //     await openManageReportAction(page, "view", created.datasetGroupId);
-  //     await expectViewValuesForType(page, item.key, created.values);
-
-  //     const snapshot = (await expectDatasetSavedById(
-  //       created.datasetGroupId,
-  //     )) as DatasetSnapshot;
-
-  //     expect(snapshotToText(snapshot)).toContain(created.values.datasetName);
-  //     expect(snapshotToText(snapshot)).toContain(dictionaryRows[0].columnName.value);
-  //   });
-  // }
 
   test("Scenario deleteReport: ลบข้อมูลรายงาน", async ({ page }) => {
     test.setTimeout(180000);
@@ -3644,40 +3707,65 @@ test("Scenario Exception maxLength other: กรอกข้อมูลเก�
     console.log(`ลบข้อมูลรายงานสำเร็จ: ${reportNamePrefix}`);
   });
 
+  test("Scenario typeMetadata record: ตรวจสอบ type ของ Metadata - ข้อมูลระเบียน", async ({ page }) => {
+    test.setTimeout(480000);
+    await mReportPart1(page);
+    await page.locator("#admin-report-step-1-next").click();
+    await expect(page.locator("#admin-report-type")).toBeVisible({ timeout: 10000 });
+    await fillMetadataForTypeCheck(page, "record");
+    for (const field of getInputTypeFieldsByType("record")) {
+      const input = page.locator(field.selector);
+      if (await input.isVisible().catch(() => false)) await checkInputType(page, field);
+    }
+  });
 
-  for (const item of metadataTypeCases) {
-    test(`Scenario typeMetadata: ตรวจสอบ type ของ Metadata - ${item.name}`, async ({
-      page,
-    }) => {
-      test.setTimeout(480000);
+  test("Scenario typeMetadata statistic: ตรวจสอบ type ของ Metadata - ข้อมูลสถิติ", async ({ page }) => {
+    test.setTimeout(480000);
+    await mReportPart1(page);
+    await page.locator("#admin-report-step-1-next").click();
+    await expect(page.locator("#admin-report-type")).toBeVisible({ timeout: 10000 });
+    await fillMetadataForTypeCheck(page, "statistic");
+    for (const field of getInputTypeFieldsByType("statistic")) {
+      const input = page.locator(field.selector);
+      if (await input.isVisible().catch(() => false)) await checkInputType(page, field);
+    }
+  });
 
-      await mReportPart1(page);
+  test("Scenario typeMetadata geoSpatial: ตรวจสอบ type ของ Metadata - ข้อมูลภูมิสารสนเทศเชิงพื้นที่", async ({ page }) => {
+    test.setTimeout(480000);
+    await mReportPart1(page);
+    await page.locator("#admin-report-step-1-next").click();
+    await expect(page.locator("#admin-report-type")).toBeVisible({ timeout: 10000 });
+    await fillMetadataForTypeCheck(page, "geoSpatial");
+    for (const field of getInputTypeFieldsByType("geoSpatial")) {
+      const input = page.locator(field.selector);
+      if (await input.isVisible().catch(() => false)) await checkInputType(page, field);
+    }
+  });
 
-      await page.locator("#admin-report-step-1-next").click();
+  test("Scenario typeMetadata multiple: ตรวจสอบ type ของ Metadata - ข้อมูลหลากหลายประเภท", async ({ page }) => {
+    test.setTimeout(480000);
+    await mReportPart1(page);
+    await page.locator("#admin-report-step-1-next").click();
+    await expect(page.locator("#admin-report-type")).toBeVisible({ timeout: 10000 });
+    await fillMetadataForTypeCheck(page, "multiple");
+    for (const field of getInputTypeFieldsByType("multiple")) {
+      const input = page.locator(field.selector);
+      if (await input.isVisible().catch(() => false)) await checkInputType(page, field);
+    }
+  });
 
-      await expect(page.locator("#admin-report-type")).toBeVisible({
-        timeout: 10000,
-      });
-
-      await fillMetadataForTypeCheck(page, item.key);
-
-      const fields = getInputTypeFieldsByType(item.key);
-
-      for (const field of fields) {
-        const input = page.locator(field.selector);
-
-        if (await input.isVisible().catch(() => false)) {
-          await checkInputType(page, field);
-        }
-      }
-
-      // สำคัญ: Scenario นี้ไม่ต้องกดไป Step 3
-      // เพราะเป็นการตรวจ type ของ Metadata เท่านั้น
-    });
-  }
-
-   
-
+  test("Scenario typeMetadata other: ตรวจสอบ type ของ Metadata - ข้อมูลประเภทอื่น ๆ ระบุ", async ({ page }) => {
+    test.setTimeout(480000);
+    await mReportPart1(page);
+    await page.locator("#admin-report-step-1-next").click();
+    await expect(page.locator("#admin-report-type")).toBeVisible({ timeout: 10000 });
+    await fillMetadataForTypeCheck(page, "other");
+    for (const field of getInputTypeFieldsByType("other")) {
+      const input = page.locator(field.selector);
+      if (await input.isVisible().catch(() => false)) await checkInputType(page, field);
+    }
+  });
 
   test("Scenario typeDictionary: ตรวจสอบ type ของ Data Dictionary", async ({ page }) => {
     test.setTimeout(120000);
@@ -3767,8 +3855,6 @@ test("Scenario Exception maxLength other: กรอกข้อมูลเก�
       );
     }
   });
-
- 
 
   test("Scenario updateMetadataRecord: แก้ไขข้อมูลรายงาน , แก้ไข Metadata โดยเลือก ข้อมูลระเบียน และแก้ไขข้อมูล Datadictionary", async ({ page }) => {
     test.setTimeout(240000);
@@ -3972,22 +4058,22 @@ test("Scenario Exception maxLength other: กรอกข้อมูลเก�
   });
 
   test("Scenario View: ดูข้อมูลรายงาน - ข้อมูลระเบียน", async ({ page }) => {
-  test.setTimeout(240000);
+    test.setTimeout(240000);
 
-  const reportNamePrefix = "รายงาน51071b";
+    const reportNamePrefix = "รายงาน51071b";
 
-  const datasetGroupId = await searchReportAndClickView(
-    page,
-    reportNamePrefix,
-  );
+    const datasetGroupId = await searchReportAndClickView(
+      page,
+      reportNamePrefix,
+    );
 
-  await expect(page.locator("#admin-report-add-name")).toBeVisible({
-    timeout: 30000,
+    await expect(page.locator("#admin-report-add-name")).toBeVisible({
+      timeout: 30000,
+    });
+
+    await expectViewPageMatchesDatabase(page, datasetGroupId);
+
+    console.log("View ข้อมูลระเบียนถูกต้อง:", datasetGroupId);
   });
-
-  await expectViewPageMatchesDatabase(page, datasetGroupId);
-
-  console.log("View ข้อมูลระเบียนถูกต้อง:", datasetGroupId);
-});
 
 });
