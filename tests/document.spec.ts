@@ -4,8 +4,20 @@ import { selectAntdDateByDay, selectAntdOption } from "../share/selectAntd";
 import { createRandomUploadFile } from "../share/fileRandom";
 import { login } from "../share/login.spec";
 import { logout } from "../share/logout.spec";
-
+let docnamecheck: string;
 test("document test", async ({ page }) => {
+  await test.step("login", async () => {
+    await login(page);
+  });
+  await page.locator("button#จัดการข้อมูล-5").click();
+  await page.locator("a#จัดการเอกสารเผยแพร่-1").click();
+  await expect(page).toHaveURL(/.*manage\/document/);
+
+  await test.step("ตรวจสอบข้อมูล", async () => {
+    await checkdata(page);
+    // await logout(page);
+  });
+
   await test.step("เพิ่มข้อมูล", async () => {
     await adddata(page);
     // await logout(page);
@@ -22,17 +34,36 @@ test("document test", async ({ page }) => {
   });
 });
 
+async function checkdata(page: Page) {
+  await page.locator("#submit").click();
+  await expect(page.locator("#docName_help")).toContainText(
+    "กรุณากรอกชื่อเอกสาร",
+  );
+  await expect(page.locator("#catalogCode_help")).toContainText(
+    "กรุณาเลือกหมวดหมู่",
+  );
+  await expect(page.locator("#detail_help")).toContainText(
+    "กรุณากรอกรายละเอียดเอกสาร",
+  );
+  await expect(page.locator("#publishStatus_help")).toContainText(
+    "กรุณาเลือกสถานะ",
+  );
+  await expect(page.locator("#pubDate_help")).toContainText(
+    "กรุณาเลือกวันเผยแพร่",
+  );
+  await expect(page.locator("#expiryDate_help")).toContainText(
+    "กรุณาเลือกวันหมดอายุ",
+  );
+  await expect(page.locator("#periodType_help")).toContainText(
+    "กรุณาเลือกช่วงเวลา",
+  );
+}
+
 //createdocpub
 async function adddata(page: Page) {
-  await login(page);
-
-  //ไปที่menu จัดการข้อมูลและ เข้าหน้าจัดการรายงาน
-  await page.locator("button#จัดการข้อมูล-5").click();
-  await page.locator("a#จัดการเอกสารเผยแพร่-1").click();
-  await expect(page).toHaveURL(/.*manage\/document/);
-
   //addข้อมูล
   const docName = randomText(20);
+  docnamecheck = docName; // กำหนดค่าให้กับตัวแปร globalเพื่อใช้ในการค้นหาต่อในขั้นตอนแก้ไข
   await page.locator("#docName").fill(docName);
 
   await selectAntdOption(page, "#catalogCode", "รายงานสถานการณ์แรงงาน");
@@ -56,20 +87,43 @@ async function adddata(page: Page) {
 
   await page.keyboard.press("Enter");
   const swal = page.locator(".swal2-popup");
+
+  // รอ swal แสดง
   await expect(swal).toBeVisible({ timeout: 10000 });
   await expect(page.locator(".swal2-title")).toContainText(
     "บันทึกข้อมูลเสร็จสิ้น",
   );
-  //chack data is have value
-  const targetRow = page
-    .locator(".ant-table-tbody tr.ant-table-row", {
-      has: page.locator("td", { hasText: docName }),
-    })
+
+  // 2️⃣ รอ swal ปิด / disappear
+  await Promise.all([
+    page.waitForResponse(
+      (res) =>
+        res.url().includes("/api/managedocument/Read/List") &&
+        res.status() === 200,
+      { timeout: 10000 },
+    ),
+    expect(swal).toHaveCount(0, { timeout: 10000 }),
+  ]);
+
+  const searchInput = page.locator(
+    'input[placeholder="ค้นหา ชื่อเอกสาร,รายละเอียด"]',
+  );
+
+  await expect(searchInput).toBeVisible({ timeout: 10000 });
+  await expect(searchInput).toBeEnabled({ timeout: 10000 });
+
+  await searchInput.clear();
+  await searchInput.fill(docnamecheck);
+
+  // เลือกแถวแรกหลัง filter
+  const firstRows = page
+    .locator("table tbody tr.ant-table-row-level-0")
     .first();
+  await expect(firstRows).toBeVisible({ timeout: 10000 });
 
-  await expect(targetRow).toBeVisible({ timeout: 10000 });
-
-  await targetRow.locator('button[id^="edit-"]').click();
+  // เลือกปุ่มใน column 8
+  const checkbtn = firstRows.locator('td:nth-child(8)  button[id*="edit"]');
+  await checkbtn.click();
 
   await expect(page.locator("#docName")).toHaveValue(docName);
 
@@ -82,9 +136,9 @@ async function adddata(page: Page) {
     "เผยแพร่",
   );
 
-  await expect(page.locator("#pubDate")).toHaveValue(/^12/);
+  await expect(page.locator("#pubDate")).toHaveValue(/-12$/);
 
-  await expect(page.locator("#expiryDate")).toHaveValue(/^18/);
+  await expect(page.locator("#expiryDate")).toHaveValue(/-18$/);
 
   await expect(page.locator("#periodType").locator("..")).toContainText(
     "รายเดือน",
@@ -95,22 +149,28 @@ async function adddata(page: Page) {
 
 //updatedata
 async function updatedata(page: Page) {
-  await page.goto("/main");
-  // login(page);
+  const searchInput = page.locator(
+    'input[placeholder="ค้นหา ชื่อเอกสาร,รายละเอียด"]',
+  );
 
-  //ไปที่menu จัดการข้อมูลและ เข้าหน้าจัดการรายงาน
+  await expect(searchInput).toBeVisible({ timeout: 10000 });
+  await expect(searchInput).toBeEnabled({ timeout: 10000 });
 
-  await page.locator("button#จัดการข้อมูล-5").click();
-  await page.locator("a#จัดการเอกสารเผยแพร่-1").click();
-  await expect(page).toHaveURL(/.*manage\/document/);
+  await searchInput.clear();
+  await searchInput.fill(docnamecheck);
 
-  //updata data
+  const firstRows = page
+    .locator("table tbody tr.ant-table-row-level-0")
+    .first();
 
-  await page.locator('[id^="edit-"]').first().click();
+  await expect(firstRows).toBeVisible({ timeout: 10000 });
+  // เลือกปุ่มใน column 8
+  const checkbtn = firstRows.locator('td:nth-child(8)  button[id*="edit"]');
+  await checkbtn.click();
 
   const docName = randomText(20);
   await page.locator("#docName").fill(docName);
-
+  docnamecheck = docName; // อัพเดทชื่อตัวแปร global เพื่อใช้ในการค้นหาต่อในขั้นตอนลบ
   await selectAntdOption(page, "#catalogCode", "สถิติผลการดำเนินงาน");
 
   const docDetail = randomText(60);
@@ -132,17 +192,38 @@ async function updatedata(page: Page) {
   await expect(page.locator(".swal2-title")).toContainText(
     "แก้ไขข้อมูลเสร็จสิ้น",
   );
+  await Promise.all([
+    page.waitForResponse(
+      (res) =>
+        res.url().includes("/api/managedocument/Read/List") &&
+        res.status() === 200,
+      { timeout: 10000 },
+    ),
+    expect(swal).toHaveCount(0, { timeout: 10000 }),
+  ]);
+
+  // รอ table reload เสร็จจริง
+  await expect(
+    page.locator("table tbody tr.ant-table-row-level-0").first(),
+  ).toBeVisible({ timeout: 10000 });
 
   //check data is update?
-  const targetRow = page
-    .locator(".ant-table-tbody tr.ant-table-row", {
-      has: page.locator("td", { hasText: docName }),
-    })
+  await searchInput.waitFor({ state: "visible", timeout: 10000 });
+  // รอให้ visible ก่อน
+  await expect(searchInput).toBeVisible({ timeout: 10000 });
+
+  await searchInput.fill(docName);
+  await page.waitForTimeout(1000); // รอให้ table update หลัง search
+  // เลือกแถวแรกหลัง filter
+  const firstRowscheck = page
+    .locator("table tbody tr.ant-table-row-level-0")
     .first();
-
-  await expect(targetRow).toBeVisible({ timeout: 10000 });
-
-  await targetRow.locator('button[id^="edit-"]').click();
+  await expect(firstRows).toBeVisible({ timeout: 10000 });
+  // เลือกปุ่มใน column 8
+  const checkbtnupdate = firstRowscheck.locator(
+    'td:nth-child(8)  button[id*="edit"]',
+  );
+  checkbtnupdate.click();
 
   await expect(page.locator("#docName")).toHaveValue(docName);
 
@@ -156,9 +237,9 @@ async function updatedata(page: Page) {
     "ฉบับร่าง",
   );
 
-  await expect(page.locator("#pubDate")).toHaveValue(/^16/);
+  await expect(page.locator("#pubDate")).toHaveValue(/-16$/);
 
-  await expect(page.locator("#expiryDate")).toHaveValue(/^29/);
+  await expect(page.locator("#expiryDate")).toHaveValue(/-29$/);
 
   await expect(page.locator("#periodType").locator("..")).toContainText(
     "รายไตรมาส",
@@ -169,27 +250,24 @@ async function updatedata(page: Page) {
 
 //deletedata
 async function deletedata(page: Page) {
-  // login(page);
-  await page.goto("/main");
+  const searchInput = page.locator(
+    'input[placeholder="ค้นหา ชื่อเอกสาร,รายละเอียด"]',
+  );
 
-  //ไปที่menu จัดการข้อมูลและ เข้าหน้าจัดการรายงาน
-  await page.locator("button#จัดการข้อมูล-5").click();
-  await page.locator("a#จัดการเอกสารเผยแพร่-1").click();
-  await expect(page).toHaveURL(/.*manage\/document/);
+  await expect(searchInput).toBeVisible({ timeout: 10000 });
+  await expect(searchInput).toBeEnabled({ timeout: 10000 });
 
-  // เลือกแถวข้อมูลจริงแถวแรก ไม่เอา ant-table-measure-row
-  const rows = page.locator(".ant-table-tbody tr:not(.ant-table-measure-row)");
+  await searchInput.clear();
+  await searchInput.fill(docnamecheck);
 
-  const firstRow = rows.first();
-  await expect(firstRow).toBeVisible({ timeout: 10000 });
+  const firstRows = page
+    .locator("table tbody tr.ant-table-row-level-0")
+    .first();
 
-  // เก็บชื่อที่จะลบไว้เป็น string
-  const deletedDocName = (
-    await firstRow.locator("td").nth(1).innerText()
-  ).trim();
-
-  // กดลบจากแถวเดียวกัน
-  await firstRow.locator('[id^="delete-"]').click();
+  await expect(firstRows).toBeVisible({ timeout: 10000 });
+  // เลือกปุ่มใน column 8
+  const checkbtn = firstRows.locator('td:nth-child(8)  button[id^="delete-"]');
+  await checkbtn.click();
 
   // popup confirm ลบ
   await expect(page.locator(".swal2-popup")).toBeVisible({ timeout: 10000 });
@@ -201,7 +279,7 @@ async function deletedata(page: Page) {
 
   // เช็คว่าชื่อที่ลบหายไปจาก table แล้ว
   await expect(page.locator(".ant-table-tbody")).not.toContainText(
-    deletedDocName,
+    docnamecheck,
     { timeout: 10000 },
   );
 }

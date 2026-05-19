@@ -37,18 +37,33 @@ export async function selectAntdDateByDay(
 }
 
 export async function selectAntdOption(
-  page: any,
+  page: Page,
   selectSelector: string,
   optionText: string,
 ) {
-  await page.locator(selectSelector).click();
+  const input = page.locator(selectSelector);
 
-  const dropdown = page
-    .locator(".ant-select-dropdown:not(.ant-select-dropdown-hidden)")
-    .last();
+  // กด wrapper ของ AntD select
+  await input.locator("..").click();
 
-  await dropdown
+  const dropdown = page.locator(
+    ".ant-select-dropdown:not(.ant-select-dropdown-hidden)",
+  );
+
+  // ถ้า select นี้ search ได้ ค่อยพิมพ์
+  const canSearch = await input.isEditable().catch(() => false);
+
+  if (canSearch) {
+    await input.fill("");
+    await input.fill(optionText);
+  }
+
+  const option = dropdown
     .locator(".ant-select-item-option")
     .filter({ hasText: optionText })
-    .click();
+    .first();
+
+  await expect(option).toBeVisible({ timeout: 15000 });
+  await option.scrollIntoViewIfNeeded();
+  await option.click();
 }
